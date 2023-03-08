@@ -32,6 +32,7 @@ void AShooterHUD::BeginPlay()
 	Super::BeginPlay();
 
 	AddAnnouncement();
+	AddCharacterOverlay();
 }
 
 void AShooterHUD::AddCharacterOverlay()
@@ -72,11 +73,16 @@ void AShooterHUD::Refresh()
 	// We need player controller and player character because the data is stored there.
 	if (AShooterPlayerController* ShooterPlayerController = Cast<AShooterPlayerController>(GetOwningPlayerController()))
 	{
-		ShooterPlayerController->UpdatePlayerHealth(100.f, 100.f);
 		const AMainCharacter* MainCharacter = Cast<AMainCharacter>(ShooterPlayerController->GetCharacter());
-		if (MainCharacter && MainCharacter->GetCombat())
+
+		if (MainCharacter)
 		{
-			ShooterPlayerController->UpdateGrenade(MainCharacter->GetCombat()->GetGrenadeAmount());
+			ShooterPlayerController->UpdatePlayerHealth(MainCharacter->GetHealth(), MainCharacter->GetMaxHealth());
+			
+			if (MainCharacter->GetCombat())
+			{
+				ShooterPlayerController->UpdateGrenade(MainCharacter->GetCombat()->GetGrenadeAmount());
+			}
 		}
 	}
 }

@@ -224,7 +224,7 @@ void UMenu::OnJoinSession(EOnJoinSessionCompleteResult::Type Result)
 				-1,
 				15.f,
 				FColor::Red,
-				FString(TEXT("Failed to join the session"))
+				FString::Printf(TEXT("Faild to join session, %i"), Result)
 			);
 		}
 		JoinButton->SetIsEnabled(true);

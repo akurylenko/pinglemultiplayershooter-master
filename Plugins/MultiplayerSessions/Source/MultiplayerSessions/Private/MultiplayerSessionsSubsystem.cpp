@@ -41,7 +41,7 @@ void UMultiplayerSessionsSubsystem::CreateSession(int32 NumPublicConnections, FS
 
 	// Create a new Session
 	LastSessionSettings = MakeShareable(new FOnlineSessionSettings());
-	LastSessionSettings->bIsLANMatch = IOnlineSubsystem::Get()->GetSubsystemName() == "NULL" ? true : false;	// Set up a session over the Internet or Local
+	LastSessionSettings->bIsLANMatch = true;	// Set up a session over the Internet or Local
 	LastSessionSettings->NumPublicConnections = NumPublicConnections;	// Allow the number of players in the game
 	LastSessionSettings->bAllowJoinInProgress = true;					// Allow players to join in when the program is running
 	LastSessionSettings->bAllowJoinViaPresence = true;					// Steam's presence--searching for players in his region of the world
@@ -78,7 +78,7 @@ void UMultiplayerSessionsSubsystem::FindSessions(int32 MaxSearchResults)
 
 	// Search for sessions
 	LastSessionSearch = MakeShareable(new FOnlineSessionSearch());
-	LastSessionSearch->bIsLanQuery = IOnlineSubsystem::Get()->GetSubsystemName() == "NULL" ? true : false;;
+	LastSessionSearch->bIsLanQuery = true;
 	LastSessionSearch->MaxSearchResults = MaxSearchResults;
 	LastSessionSearch->QuerySettings.Set(SEARCH_PRESENCE, true, EOnlineComparisonOp::Equals);
 	

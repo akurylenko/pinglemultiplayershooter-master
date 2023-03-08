@@ -11,6 +11,8 @@
 #include "Weapon/Weapon.h"
 #include "MainCharacter.generated.h"
 
+DECLARE_DYNAMIC_DELEGATE(FOnThrowGrenadeMontageEnd);
+
 
 class FOnTimelineFloat;
 UCLASS()
@@ -196,6 +198,7 @@ private:
 	class UBuffComponent* Buff;
 
 public:
+	UFUNCTION(BlueprintCallable)
 	bool IsWeaponEquipped() const;
 	bool IsAiming() const;
 

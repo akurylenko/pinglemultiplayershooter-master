@@ -15,7 +15,7 @@ class MULTIPLAYERSHOOTER_API AWeaponHitScan : public AWeapon
 {
 	GENERATED_BODY()
 
-protected:
+public:
 	virtual void Fire(const FVector& TraceHitTarget) override;
 
 private:

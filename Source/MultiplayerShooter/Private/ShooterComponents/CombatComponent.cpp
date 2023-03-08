@@ -49,6 +49,17 @@ void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 	
 }
 
+void UCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(UCombatComponent, EquippedWeapon);
+	DOREPLIFETIME(UCombatComponent, CombatState);
+	DOREPLIFETIME(UCombatComponent, HitTarget);
+	DOREPLIFETIME(UCombatComponent, bAiming);
+	DOREPLIFETIME(UCombatComponent, CarriedAmmo);
+}
+
 void UCombatComponent::UpdateCharacterSpeed()
 {
 	if (MainCharacter && MainCharacter->GetCharacterMovement())
@@ -58,48 +69,101 @@ void UCombatComponent::UpdateCharacterSpeed()
 	}
 }
 
+void UCombatComponent::OnRep_EquipWeapon(AWeapon* PrevWeapon)
+{
+	if (PrevWeapon)
+	{
+		PrevWeapon->Dropped();
+	}
+	if (EquippedWeapon)
+	{
+		EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
+
+		EquippedWeapon->SetOwner(MainCharacter);
+
+		bAutomaticFire = EquippedWeapon->GetCanAutoFire();
+
+
+		// Automatically propagated to the clients, that's why we don't need to do attachment on the client again.
+		AttachWeaponToRightHand();
+
+		if (GetNetMode() != NM_DedicatedServer)
+		{
+			EquippedWeapon->SetHUDAmmo();
+
+			// Show the HUD: weapon type, ammo amount, carried ammo amount.
+			SetHUDWeaponType();
+
+			// Play equip sound.
+			if (MainCharacter->IsLocallyControlled())
+			{
+				UGameplayStatics::PlaySoundAtLocation(this, EquippedWeapon->EquippedSound, MainCharacter->GetActorLocation(), FRotator::ZeroRotator);
+			}
+		}
+
+		SetCarriedAmmoFromMap(EquippedWeapon->GetWeaponType());	// Set carried ammo and display the HUD.
+
+		MainCharacter->GetCharacterMovement()->bOrientRotationToMovement = false;
+		MainCharacter->bUseControllerRotationYaw = true;
+	}
+}
+
+bool UCombatComponent::Server_EquipWeapon_Validate(AWeapon* WeaponToEquip)
+{
+	return true;
+}
+
+void UCombatComponent::Server_EquipWeapon_Implementation(AWeapon* WeaponToEquip)
+{
+	AWeapon* Prev = EquippedWeapon;
+
+	EquippedWeapon = WeaponToEquip;
+
+	OnRep_EquipWeapon(Prev);
+}
+
 void UCombatComponent::EquipWeapon(AWeapon* WeaponToEquip)
 {
-	if (!MainCharacter || !WeaponToEquip) return;
-
-	// Drop equipped weapon.
-	if (EquippedWeapon) EquippedWeapon->Dropped();
-
-	// Set weapon and its state.
-	EquippedWeapon = WeaponToEquip;
-	bAutomaticFire = EquippedWeapon->GetCanAutoFire();
-	EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
-
-	// Automatically propagated to the clients, that's why we don't need to do attachment on the client again.
-	AttachWeaponToRightHand();
-	
-	EquippedWeapon->SetOwner(MainCharacter);
-
-	// Show the HUD: weapon type, ammo amount, carried ammo amount.
-	SetHUDWeaponType();
-	EquippedWeapon->SetHUDAmmo();
-	SetCarriedAmmoFromMap(EquippedWeapon->GetWeaponType());	// Set carried ammo and display the HUD.
-	
-	// Play equip sound.
-	if (MainCharacter->IsLocallyControlled())
+	if (!MainCharacter || !WeaponToEquip)
 	{
-		UGameplayStatics::PlaySoundAtLocation(this, EquippedWeapon->EquippedSound, MainCharacter->GetActorLocation(), FRotator::ZeroRotator);
+		return;
 	}
-	
-	MainCharacter->GetCharacterMovement()->bOrientRotationToMovement = false;
-	MainCharacter->bUseControllerRotationYaw = true;
+
+	Server_EquipWeapon(WeaponToEquip);
+}
+
+void UCombatComponent::OnRep_SetCombatState()
+{
+	HandleCombatState();
 }
 
 void UCombatComponent::SetCombatState(const ECombatState State)
 {
 	CombatState = State;
-	HandleCombatState();
+	OnRep_SetCombatState();
+}
+
+void UCombatComponent::OnRep_SetCarriedAmmo(int32 PrevAmount)
+{
+	HandleCarriedAmmo();
+}
+
+bool UCombatComponent::Server_SetCarriedAmmo_Validate(int32 Amount)
+{
+	return true;
+}
+
+void UCombatComponent::Server_SetCarriedAmmo_Implementation(int32 Amount)
+{
+	int32 PrevAmount = CarriedAmmo;
+	CarriedAmmo = Amount;
+
+	OnRep_SetCarriedAmmo(PrevAmount);
 }
 
 void UCombatComponent::SetCarriedAmmo(int32 Amount)
 {
-	CarriedAmmo = Amount;
-	HandleCarriedAmmo();
+	Server_SetCarriedAmmo(Amount);
 }
 
 void UCombatComponent::HandleCarriedAmmo()
@@ -117,17 +181,72 @@ void UCombatComponent::HandleCarriedAmmo()
 	}
 }
 
-void UCombatComponent::SetAiming(bool bIsAiming)
+void UCombatComponent::OnRep_SetAiming(bool PrevIsAiming)
 {
-	if (!MainCharacter || !EquippedWeapon) return;
-	
-	bAiming = bIsAiming;
 	UpdateCharacterSpeed();
 
 	// Sniper scope effect when aiming. Be aware of IsLocallyControlled check.
 	if (MainCharacter->IsLocallyControlled() && EquippedWeapon->GetWeaponType() == EWeaponType::EWT_SniperRifle)
 	{
-		MainCharacter->ShowSniperScopeWidget(bIsAiming);
+		MainCharacter->ShowSniperScopeWidget(bAiming);
+	}
+}
+
+bool UCombatComponent::Server_SetAiming_Validate(bool bIsAiming)
+{
+	return true;
+}
+
+void UCombatComponent::Server_SetAiming_Implementation(bool bIsAiming)
+{
+	bool PrevIsAiming = bAiming;
+	bAiming = bIsAiming;
+
+	OnRep_SetAiming(PrevIsAiming);
+}
+
+void UCombatComponent::SetAiming(bool bIsAiming)
+{
+	if (!MainCharacter || !EquippedWeapon) return;
+	
+	Server_SetAiming(bIsAiming);
+}
+
+void UCombatComponent::OnRep_SetHitTarget(FVector VHitTarget)
+{
+}
+
+void UCombatComponent::Server_SetHitTarget_Implementation(FVector VHitTarget)
+{
+	HitTarget = VHitTarget;
+	OnRep_SetHitTarget(VHitTarget);
+}
+
+void UCombatComponent::SetHitTarget(FVector VHitTarget)
+{
+	Server_SetHitTarget(VHitTarget);
+}
+
+bool UCombatComponent::Server_Fire_Validate()
+{
+	return true;
+}
+
+void UCombatComponent::Server_Fire_Implementation()
+{
+	OnRep_Fire();
+
+	MainCharacter->PlayFireMontage(bAiming);
+}
+
+void UCombatComponent::OnRep_Fire()
+{
+	if (CanFire())
+	{
+		AimFactor += EquippedWeapon->GetRecoilFactor();
+		MainCharacter->PlayFireMontage(bAiming);
+
+		EquippedWeapon->Fire(HitTarget);
 	}
 }
 
@@ -143,11 +262,11 @@ void UCombatComponent::Fire()
 	{
 		if (!MainCharacter || !EquippedWeapon || CombatState != ECombatState::ECS_Unoccupied) return;
 
-		AimFactor += EquippedWeapon->GetRecoilFactor();
-		MainCharacter->PlayFireMontage(bAiming);
-		EquippedWeapon->Fire(HitTarget);
+		Server_Fire();
 
 		StartFireTimer();
+
+		MainCharacter->PlayFireMontage(bAiming);
 	}
 }
 
@@ -327,12 +446,28 @@ void UCombatComponent::LaunchGrenadeAnimNotify()
 	ShowGrenadeAttached(false);
 }
 
+
+bool UCombatComponent::Server_Reload_Validate()
+{
+	return true;
+}
+
+void UCombatComponent::Server_Reload_Implementation()
+{
+	SetCombatState(ECombatState::ECS_Reloading);
+	MainCharacter->PlayReloadMontage();
+}
+
 void UCombatComponent::Reload()
 {
 	if (!MainCharacter || IsCarriedAmmoEmpty() || CombatState != ECombatState::ECS_Unoccupied ||
-		!EquippedWeapon || EquippedWeapon->IsAmmoFull()) return;
+		!EquippedWeapon || EquippedWeapon->IsAmmoFull())
+	{
+		return;
+	}
 
-	CombatState = ECombatState::ECS_Reloading;
+	Server_Reload();
+
 	MainCharacter->PlayReloadMontage();
 }
 
@@ -359,14 +494,29 @@ void UCombatComponent::ReloadAmmoAmount()
 
 void UCombatComponent::ThrowGrenade()
 {
-	if (!MainCharacter || CombatState != ECombatState::ECS_Unoccupied || IsGrenadeEmpty()) return;
+	if (!MainCharacter || CombatState != ECombatState::ECS_Unoccupied || IsGrenadeEmpty())
+	{
+		return;
+	}
 
-	SetCombatState(ECombatState::ECS_Throwing);
+	Server_ThrowGrenade();
+
 	SetGrenadeAmount(Grenade - 1);
 
 	AttachWeaponToLeftHand();
 
 	MainCharacter->PlayThrowGrenadeMontage();
+}
+
+void UCombatComponent::Server_ThrowGrenade_Implementation()
+{
+
+	SetCombatState(ECombatState::ECS_Throwing);
+
+	AttachWeaponToLeftHand();
+
+	MainCharacter->PlayThrowGrenadeMontage();
+
 }
 
 void UCombatComponent::LaunchGrenade(const FVector_NetQuantize& Target)
@@ -511,7 +661,7 @@ void UCombatComponent::TraceUnderCrosshairs(FHitResult& HitResult)
 			CrosshairColor = FColor::White;
 		}
 	}
-	HitTarget = HitResult.ImpactPoint;
+	SetHitTarget(HitResult.ImpactPoint);
 }
 
 void UCombatComponent::UpdateHUDCrosshairs(float DeltaTime)

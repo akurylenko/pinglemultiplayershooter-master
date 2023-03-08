@@ -8,6 +8,7 @@
 #include "Components/WidgetComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "GameFramework/PlayerState.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Net/UnrealNetwork.h"
 #include "Weapon/Weapon.h"
@@ -357,6 +358,7 @@ void AMainCharacter::PlayReloadMontage() const
 		}
 		AnimInstance->Montage_JumpToSection(SectionName);
 	}
+	Combat->SetCombatState(ECombatState::ECS_Unoccupied);
 }
 
 void AMainCharacter::PlayThrowGrenadeMontage() const
@@ -367,6 +369,12 @@ void AMainCharacter::PlayThrowGrenadeMontage() const
 	if (AnimInstance && ThrowGrenadeMontage)
 	{
 		AnimInstance->Montage_Play(ThrowGrenadeMontage);
+		if (Combat)
+		{
+			Combat->SetCombatState(ECombatState::ECS_Unoccupied);
+		}
+
+		//ThrowGrenadeMontage->
 	}
 }
 
@@ -472,7 +480,7 @@ void AMainCharacter::LookUpAtRate(float Value)
 
 void AMainCharacter::EquipButtonPressed()
 {
-	if (Combat)
+	if (Combat && OverlappingWeapon)
 	{
 		Combat->EquipWeapon(OverlappingWeapon);
 	}
@@ -601,6 +609,9 @@ void AMainCharacter::PlayFireMontage(bool bAiming) const
 
 bool AMainCharacter::IsWeaponEquipped() const
 {
+	if (Combat && GetPlayerState())
+	UE_LOG(LogTemp, Display, TEXT("Name %s, IsEquipped %s"), *GetPlayerState()->GetPlayerName(), Combat->EquippedWeapon ? TEXT("yes") : TEXT("no"));
+
 	return (Combat && Combat->EquippedWeapon);
 }
 

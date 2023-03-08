@@ -19,6 +19,8 @@ public:
 	friend class AMainCharacter;
 
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+
+	virtual void GetLifetimeReplicatedProps(TArray< FLifetimeProperty >& OutLifetimeProps) const override;
 	
 	void UpdateCharacterSpeed();
 	FORCEINLINE float GetBaseWalkSpeed() const { return BaseWalkSpeed; }
@@ -70,8 +72,40 @@ protected:
 	/* Aiming, animation */
 	void SetAiming(bool bIsAiming);
 
+	void SetHitTarget(FVector VHitTarget);
+
 	/* Cross hair algorithm */
 	void TraceUnderCrosshairs(FHitResult& HitResult);
+
+	UFUNCTION()
+	virtual void OnRep_EquipWeapon(AWeapon* PrevWeapon);
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_EquipWeapon(class AWeapon* WeaponToEquip);
+
+	UFUNCTION()
+	virtual void OnRep_SetCombatState();
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_Reload();
+
+	UFUNCTION()
+	void OnRep_SetAiming(bool PrevIsAiming);
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_SetAiming(bool bIsAiming);
+
+	UFUNCTION()
+	void OnRep_SetHitTarget(FVector VHitTarget);
+
+	UFUNCTION(Server, Reliable)
+	void Server_SetHitTarget(FVector VHitTarget);
+
+	UFUNCTION()
+	void OnRep_SetCarriedAmmo(int32 PrevAmount);
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_SetCarriedAmmo(int32 Amount);
 
 private:
 	UPROPERTY()
@@ -83,7 +117,7 @@ private:
 	UPROPERTY()
 	class AShooterHUD* ShooterHUD;
 
-	UPROPERTY()
+	UPROPERTY(ReplicatedUsing = OnRep_EquipWeapon)
 	class AWeapon* EquippedWeapon;
 
 
@@ -92,7 +126,7 @@ private:
 	 */
 
 	
-	UPROPERTY()
+	UPROPERTY(ReplicatedUsing = OnRep_SetAiming)
 	bool bAiming;
 
 	UPROPERTY(EditAnywhere, Category = Movement)
@@ -113,7 +147,7 @@ private:
 	 */
 
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, ReplicatedUsing = OnRep_SetCombatState, meta = (AllowPrivateAccess = "true"))
 	ECombatState CombatState;
 
 	void HandleCombatState();
@@ -123,8 +157,14 @@ private:
 	 * Fire
 	 */
 
-	
+	UFUNCTION()
+	virtual void OnRep_Fire();
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_Fire();
+
 	void Fire();
+
 	void FireButtonPressed(bool bPressed);
 	bool CanFire() const;
 	void StartFireTimer();
@@ -158,6 +198,7 @@ private:
 
 	/* HitTarget can only be calculated on the local machine, because 'TraceUnderCrosshair' is a machine-related function.
 	 * HitTarget can be transmitted as a parameter in the RPCs to let the server know. */
+	UPROPERTY(ReplicatedUsing = OnRep_SetHitTarget)
 	FVector HitTarget;
 	
 	float VelocityFactor = 0.f;
@@ -195,7 +236,7 @@ private:
 	void ReloadAmmoAmount();
 	
 	/* Carried Ammo, right part of xxx/xxx, which means the total ammo except for the part in the clip. */
-	UPROPERTY(EditAnywhere, Category = Ammo)
+	UPROPERTY(EditAnywhere, Category = Ammo, ReplicatedUsing = OnRep_SetCarriedAmmo)
 	int32 CarriedAmmo = 0;
 
 	UPROPERTY(EditAnywhere, Category = Ammo)
@@ -208,6 +249,9 @@ private:
 
 	
 	void ThrowGrenade();
+
+	UFUNCTION(Server, Reliable)
+	void Server_ThrowGrenade();
 	
 	/* Attach the weapon to hand when throwing the grenade */
 	void AttachWeaponToLeftHand();

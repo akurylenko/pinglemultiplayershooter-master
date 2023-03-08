@@ -33,9 +33,16 @@ public:
 	void SpendRound();
 	void SetHUDAmmo();
 	void SetAmmo(const int32 Amount);
+	virtual void GetLifetimeReplicatedProps(TArray< FLifetimeProperty >& OutLifetimeProps) const override;
 	
 protected:
 	virtual void BeginPlay() override;
+
+	UFUNCTION()
+	void OnRep_SetAmmo(const int32 PervAmount);
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_SetAmmo(const int32 Amount);
 
 	UFUNCTION()
 	virtual void OnSphereBeginOverlap(
@@ -125,7 +132,7 @@ private:
 	bool CanSemiAutoFire = true;
 
 	/* Current ammo amount */
-	UPROPERTY(EditAnywhere, Category = "Weapon Properties")
+	UPROPERTY(EditAnywhere, Category = "Weapon Properties", ReplicatedUsing = OnRep_SetAmmo)
 	int32 Ammo = 30;
 
 	/* Update ammo amount, HUD */

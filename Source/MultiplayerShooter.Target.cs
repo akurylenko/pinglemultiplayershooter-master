@@ -11,5 +11,6 @@ public class MultiplayerShooterTarget : TargetRules
 		DefaultBuildSettings = BuildSettingsVersion.V2;
 
 		ExtraModuleNames.AddRange( new string[] { "MultiplayerShooter" } );
+		bUsesSteam = true;
 	}
 }

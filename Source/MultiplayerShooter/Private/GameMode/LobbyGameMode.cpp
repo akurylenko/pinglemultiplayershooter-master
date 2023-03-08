@@ -15,7 +15,44 @@ void ALobbyGameMode::PostLogin(APlayerController* NewPlayer)
 		if (World)
 		{
 			bUseSeamlessTravel = true;
-			World->ServerTravel(FString("/Game/Maps/BlasterMap?listen"));
+			if (MapNames.IsEmpty())
+			{
+				GEngine->AddOnScreenDebugMessage(
+					-1,
+					15.f,
+					FColor::Cyan,
+					FString::Printf(TEXT("/Game/Maps/StartupMap"))
+				);
+
+				World->ServerTravel(FString("/Game/Maps/StartupMap?listen"));
+
+			}
+			else if (MapNames.Num() > 1)
+			{
+				FString MapName = MapNames[FMath::RandRange(0, MapNames.Num() - 1)];
+
+				GEngine->AddOnScreenDebugMessage(
+					-1,
+					15.f,
+					FColor::Cyan,
+					MapName
+				);
+
+				World->ServerTravel(FString("/Game/Maps/" + MapName + "?listen"));
+			}
+			else
+			{
+				FString MapName = MapNames[0];
+
+				GEngine->AddOnScreenDebugMessage(
+					-1,
+					15.f,
+					FColor::Cyan,
+					MapName
+				);
+
+				World->ServerTravel(FString("/Game/Maps/" + MapName + "?listen"));
+			}
 		}
 	}
 }

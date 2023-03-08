@@ -100,12 +100,37 @@ void AWeapon::SpendRound()
 	SetAmmo(Ammo - 1);	
 }
 
+
+void AWeapon::OnRep_SetAmmo(const int32 PrevAmount)
+{
+	HandleAmmo();
+}
+
+bool AWeapon::Server_SetAmmo_Validate(const int32 Amount)
+{
+	return true;
+}
+
+void AWeapon::Server_SetAmmo_Implementation(const int32 Amount)
+{
+	int32 PrevAmmo = Ammo;
+	Ammo = Amount;
+
+	OnRep_SetAmmo(PrevAmmo);
+}
+
 void AWeapon::SetAmmo(const int32 Amount)
 {
 	if (Amount < 0 || Amount > ClipSize) return;
 	
-	Ammo = Amount;
-	HandleAmmo();
+	Server_SetAmmo(Amount);
+}
+
+void AWeapon::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(AWeapon, Ammo);
 }
 
 void AWeapon::HandleAmmo()
@@ -222,3 +247,4 @@ void AWeapon::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActo
 		MainCharacter->SetOverlappingWeapon(nullptr); 
 	}
 }
+

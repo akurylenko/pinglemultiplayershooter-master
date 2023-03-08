@@ -18,7 +18,7 @@ class MULTIPLAYERSESSIONS_API UMenu : public UUserWidget
 public:
 	UFUNCTION(BlueprintCallable)
 	void SetupMenu(int32 NumberOfPublicConnections = 4, FString TypeOfMatch = TEXT("FreeForAll"),
-		int32 MaxNumberOfSearchResults = 10000, FString PathOfLobby = FString(TEXT("/Game/ThirdPerson/Maps/Lobby")));
+		int32 MaxNumberOfSearchResults = 10000000, FString PathOfLobby = FString(TEXT("/Game/ThirdPerson/Maps/Lobby")));
 
 	virtual bool Initialize() override;
 
