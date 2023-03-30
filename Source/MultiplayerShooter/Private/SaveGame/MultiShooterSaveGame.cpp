@@ -19,6 +19,16 @@ FPlayerSaveData* UMultiShooterSaveGame::GetPlayerData(AShooterPlayerState* Playe
 	{
 		UE_LOG(LogTemp, Log, TEXT("During PIE we cannot use PlayerID to retrieve Saved Player data. Using first entry in array if available."));
 
+		FString CurPlayerName = PlayerState->GetPlayerName();
+		for (int32 i = 0; i < SavedPlayers.Num(); i++)
+		{
+			UE_LOG(LogTemp, Display, TEXT("Name %s"), *CurPlayerName);
+
+			if (CurPlayerName == SavedPlayers[i].ActorName)
+			{
+				return &SavedPlayers[i];
+			}
+		}
 		if (SavedPlayers.IsValidIndex(0))
 		{
 			return &SavedPlayers[0];

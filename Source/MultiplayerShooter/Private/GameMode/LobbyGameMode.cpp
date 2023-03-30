@@ -15,7 +15,7 @@ void ALobbyGameMode::PostLogin(APlayerController* NewPlayer)
 		if (World)
 		{
 			bUseSeamlessTravel = true;
-			if (MapNames.IsEmpty())
+			if (!MapNames.IsEmpty())
 			{
 				GEngine->AddOnScreenDebugMessage(
 					-1,

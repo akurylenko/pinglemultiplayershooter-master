@@ -34,7 +34,7 @@ void UMultiShooterGameInstance::SaveCurrentLevel()
 	for (int32 i = 0; i < GameState->PlayerArray.Num(); i++)
 	{
 		AShooterPlayerState* PlayerState = Cast<AShooterPlayerState>(GameState->PlayerArray[i]);;
-		if (PlayerState && CurPlayerState && CurPlayerState == PlayerState)
+		if (CurPlayerState == PlayerState)
 		{
 			PlayerState->SavePlayerState(CurrentSaveGame);
 			break; // single player only at this point

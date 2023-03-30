@@ -4,8 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "Components/StaticMeshComponent.h"
 #include "JumpPlatform.generated.h"
+
+class UStaticMeshComponent;
 
 UCLASS()
 class MULTIPLAYERSHOOTER_API AJumpPlatform : public AActor

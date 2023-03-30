@@ -20,7 +20,7 @@ public:
 	FString PlayerID;
 
 	UPROPERTY()
-	FName ActorName;
+	FString ActorName;
 
 	UPROPERTY()
 	float PlayerScore;

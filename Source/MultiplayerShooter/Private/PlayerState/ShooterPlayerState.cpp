@@ -14,7 +14,7 @@ void AShooterPlayerState::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
 
-	//FCoreDelegates::OnExit.AddUObject(this, &AShooterPlayerState::OnGameClosed);
+	FCoreDelegates::OnExit.AddUObject(this, &AShooterPlayerState::OnGameClosed);
 }
 
 void AShooterPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -79,6 +79,7 @@ void AShooterPlayerState::FreePlayerState_Implementation(UMultiShooterSaveGame* 
 		SaveData.PlayerDefeats = Defeats;
 		// Stored as FString for simplicity (original Steam ID is uint64)
 		SaveData.PlayerID = GetUniqueId().ToString();
+		SaveData.ActorName = GetPlayerName();
 
 		SaveObject->SavedPlayers.Add(SaveData);
 	}
@@ -113,6 +114,8 @@ void AShooterPlayerState::SavePlayerState_Implementation(UMultiShooterSaveGame* 
 		SaveData.PlayerDefeats = Defeats;
 		// Stored as FString for simplicity (original Steam ID is uint64)
 		SaveData.PlayerID = GetUniqueId().ToString();
+		SaveData.ActorName = GetPlayerName();
+
 
 		SaveObject->SavedPlayers.Add(SaveData);
 	}
