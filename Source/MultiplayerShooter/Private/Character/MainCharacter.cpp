@@ -258,15 +258,19 @@ void AMainCharacter::Multicast_UpdateOverHeadWidget_Implementation()
 	{
 		if (IsLocallyControlled())
 		{
-			MyOverheadWidget->SetVisibility(ESlateVisibility::Visible);
+			MyOverheadWidget->SetVisibility(ESlateVisibility::Hidden);
 
 			MyOverheadWidget->UpdateHealtBar(Health, MaxHealth);
 			MyOverheadWidget->ShowPlayerName(this);
 		}
 		else
 		{
-			MyOverheadWidget->SetVisibility(ESlateVisibility::Hidden);
+			MyOverheadWidget->SetVisibility(ESlateVisibility::Visible);
+
+			MyOverheadWidget->UpdateHealtBar(Health, MaxHealth);
+			MyOverheadWidget->ShowPlayerName(this);
 		}
+		OverheadWidget->SetWidget(MyOverheadWidget);
 	}
 }
 
@@ -282,16 +286,16 @@ void AMainCharacter::UpdateOverHeadWidget()
 		{
 			if (IsLocallyControlled())
 			{
-				MyOverheadWidget->SetVisibility(ESlateVisibility::Visible);
-
-				//OverheadWidget->SetWidget(MyOverheadWidget);
-				MyOverheadWidget->UpdateHealtBar(Health, MaxHealth);
-				MyOverheadWidget->ShowPlayerName(this);
+				MyOverheadWidget->SetVisibility(ESlateVisibility::Hidden);
 			}
 			else
 			{
-				MyOverheadWidget->SetVisibility(ESlateVisibility::Hidden);
+				MyOverheadWidget->SetVisibility(ESlateVisibility::Visible);
+
+				MyOverheadWidget->UpdateHealtBar(Health, MaxHealth);
+				MyOverheadWidget->ShowPlayerName(this);
 			}
+			OverheadWidget->SetWidget(MyOverheadWidget);
 		}
 	}
 	else
