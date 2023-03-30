@@ -25,27 +25,46 @@ void AShooterHUD::DrawHUD()
 		DrawCrosshairs(HUDPackage.CrosshairsTop, FVector2D(0.f, -HUDPackage.CrosshairsCurrentSpread));
 		DrawCrosshairs(HUDPackage.CrosshairsBottom, FVector2D(0.f, HUDPackage.CrosshairsCurrentSpread));
 	}
+
+	AddAnnouncement();
+	AddCharacterOverlay();
 }
 
 void AShooterHUD::BeginPlay()
 {
 	Super::BeginPlay();
 
-	AddAnnouncement();
-	AddCharacterOverlay();
+	//AddAnnouncement();
+	//AddCharacterOverlay();
 }
 
 void AShooterHUD::AddCharacterOverlay()
 {
+	if (!CharacterOverlayClass)
+	{
+		return;
+	}
 	// APlayerController* PlayerController = GetOwningPlayerController();
-	if (CharacterOverlayClass)
+	if (!CharacterOverlay)
 	{
 		CharacterOverlay = CreateWidget<UCharacterOverlay>(GetWorld(), CharacterOverlayClass, FName("Character Overlay"));
-		if (!CharacterOverlay) return;
+		if (!CharacterOverlay)
+		{
+			return;
+		}
+	}
 
-		Refresh();
+	if (AShooterPlayerController* ShooterPlayerController = Cast<AShooterPlayerController>(GetOwningPlayerController()))
+	{
+		ShooterPlayerController->RefreshHUDData();
+	}
+
+	Refresh();
+	if (!CharacterOverlay->IsInViewport())
+	{
 		CharacterOverlay->AddToViewport();
 	}
+
 }
 
 void AShooterHUD::AddAnnouncement()
@@ -68,21 +87,6 @@ void AShooterHUD::Refresh()
 		if (CharacterOverlay->IsAnimationPlaying(CharacterOverlay->DefeatedMsgAnim))
 		{
 			CharacterOverlay->StopAnimation(CharacterOverlay->DefeatedMsgAnim);
-		}
-	}
-	// We need player controller and player character because the data is stored there.
-	if (AShooterPlayerController* ShooterPlayerController = Cast<AShooterPlayerController>(GetOwningPlayerController()))
-	{
-		const AMainCharacter* MainCharacter = Cast<AMainCharacter>(ShooterPlayerController->GetCharacter());
-
-		if (MainCharacter)
-		{
-			ShooterPlayerController->UpdatePlayerHealth(MainCharacter->GetHealth(), MainCharacter->GetMaxHealth());
-			
-			if (MainCharacter->GetCombat())
-			{
-				ShooterPlayerController->UpdateGrenade(MainCharacter->GetCombat()->GetGrenadeAmount());
-			}
 		}
 	}
 }

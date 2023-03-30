@@ -69,12 +69,34 @@ void AWeapon::ShowPickupWidget(bool bShowWidget)
 	}
 }
 
-void AWeapon::Fire(const FVector& TraceHitTarget)
+void AWeapon::Multicast_Fire_Implementation(const FVector& TraceHitTarget)
 {
 	// This is common logic, feature can be added by override.
 	if (FireAnimation && WeaponMesh)
 	{
 		WeaponMesh->PlayAnimation(FireAnimation, false);
+	}
+}
+
+void AWeapon::Server_Fire_Implementation(const FVector& TraceHitTarget)
+{
+	// This is common logic, feature can be added by override.
+	if (FireAnimation && WeaponMesh)
+	{
+		WeaponMesh->PlayAnimation(FireAnimation, false);
+	}
+}
+
+void AWeapon::Fire(const FVector& TraceHitTarget)
+{
+	// This is common logic, feature can be added by override.
+	if (GetLocalRole() < ROLE_Authority)
+	{
+		Server_Fire(TraceHitTarget);
+	}
+	else
+	{
+		Multicast_Fire(TraceHitTarget);
 	}
 	SpendRound();
 }
@@ -140,7 +162,7 @@ void AWeapon::HandleAmmo()
 	WeaponOwnerCharacter = WeaponOwnerCharacter ? WeaponOwnerCharacter : Cast<AMainCharacter>(GetOwner());
 	
 	// Jump to the end section of animation when the clip is full when reloading the shotgun.
-	if (WeaponOwnerCharacter->GetCombat() && WeaponType == EWeaponType::EWT_Shotgun && IsAmmoFull())
+	if (WeaponOwnerCharacter && WeaponOwnerCharacter->GetCombat() && WeaponType == EWeaponType::EWT_Shotgun && IsAmmoFull())
 	{
 		WeaponOwnerCharacter->GetCombat()->JumpToShotgunEnd();
 	}

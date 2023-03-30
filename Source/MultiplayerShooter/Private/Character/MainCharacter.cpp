@@ -19,6 +19,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Particles/ParticleSystemComponent.h"
 #include "PlayerController/ShooterPlayerController.h"
+#include "HUD/OverheadWidget.h"
 
 AMainCharacter::AMainCharacter()
 {
@@ -75,6 +76,8 @@ void AMainCharacter::BeginPlay()
 	LastAimRotation = FRotator(0.f, GetBaseAimRotation().Yaw, 0.f);
 	GrenadeAttached->SetVisibility(false);
 	OnTakeAnyDamage.AddDynamic(this, &ThisClass::ReceiveDamage);
+
+	UpdateOverHeadWidget();
 }
 
 void AMainCharacter::Tick(float DeltaTime)
@@ -243,6 +246,60 @@ void AMainCharacter::Eliminated()
 	GetWorldTimerManager().SetTimer(RespawnTimer, this, &ThisClass::RespawnTimerFinished, TimerDelay, false);
 }
 
+
+void AMainCharacter::OnRep_UpdateOverHeadWidget()
+{
+	MyOverheadWidget = CreateWidget<UOverheadWidget>(GetWorld()->GetFirstPlayerController(), MyOverheadWidgetClass);
+}
+
+void AMainCharacter::Multicast_UpdateOverHeadWidget_Implementation()
+{
+	if (IsValid(MyOverheadWidget))
+	{
+		if (IsLocallyControlled())
+		{
+			MyOverheadWidget->SetVisibility(ESlateVisibility::Visible);
+
+			MyOverheadWidget->UpdateHealtBar(Health, MaxHealth);
+			MyOverheadWidget->ShowPlayerName(this);
+		}
+		else
+		{
+			MyOverheadWidget->SetVisibility(ESlateVisibility::Hidden);
+		}
+	}
+}
+
+void AMainCharacter::UpdateOverHeadWidget()
+{
+	if (!IsValid(MyOverheadWidget))
+	{
+		OnRep_UpdateOverHeadWidget();
+	}
+	if (GetLocalRole() < ROLE_Authority)
+	{
+		if (IsValid(MyOverheadWidget))
+		{
+			if (IsLocallyControlled())
+			{
+				MyOverheadWidget->SetVisibility(ESlateVisibility::Visible);
+
+				//OverheadWidget->SetWidget(MyOverheadWidget);
+				MyOverheadWidget->UpdateHealtBar(Health, MaxHealth);
+				MyOverheadWidget->ShowPlayerName(this);
+			}
+			else
+			{
+				MyOverheadWidget->SetVisibility(ESlateVisibility::Hidden);
+			}
+		}
+	}
+	else
+	{
+		Multicast_UpdateOverHeadWidget();
+	}
+}
+
 void AMainCharacter::RespawnTimerFinished()
 {
 	if (!GetWorld()) return;
@@ -276,6 +333,8 @@ void AMainCharacter::SetHUDHealth()
 	if (!ShooterPlayerController) return;
 
 	ShooterPlayerController->UpdatePlayerHealth(Health, MaxHealth);
+
+	UpdateOverHeadWidget();
 }
 
 void AMainCharacter::PlayHitReactMontage() const
@@ -283,13 +342,7 @@ void AMainCharacter::PlayHitReactMontage() const
 	// If health <= 0.f, it should play the eliminated animation rather than the hit react.
 	if (!Combat || !Combat->EquippedWeapon || Health <= 0.f) return;
 
-	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-	if (AnimInstance && HitReactMontage)
-	{
-		AnimInstance->Montage_Play(HitReactMontage);
-		const FName SectionName = FName("FromLeft");
-		AnimInstance->Montage_JumpToSection(SectionName);
-	}
+	PlayMontage(HitReactMontage, FName("FromLeft"));
 }
 
 void AMainCharacter::PlayDeathHipMontage() const
@@ -297,13 +350,7 @@ void AMainCharacter::PlayDeathHipMontage() const
 	// The montage is played only when the character is holding a weapon.
 	if (!Combat || !Combat->EquippedWeapon) return;
 	
-	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-	if (AnimInstance && DeathHipMontage)
-	{
-		AnimInstance->Montage_Play(DeathHipMontage);
-		const FName SectionName = FName("Death Hip 1");
-		AnimInstance->Montage_JumpToSection(SectionName);
-	}
+	PlayMontage(DeathHipMontage, FName("Death Hip 1"));
 }
 
 void AMainCharacter::PlayDeathIronMontage() const
@@ -311,53 +358,44 @@ void AMainCharacter::PlayDeathIronMontage() const
 	// The montage is played only when the character is holding a weapon.
 	if (!Combat || !Combat->EquippedWeapon) return;
 
-	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-	if (AnimInstance && DeathIronMontage)
-	{
-		AnimInstance->Montage_Play(DeathIronMontage);
-		const FName SectionName = FName("Death Iron 1");
-		AnimInstance->Montage_JumpToSection(SectionName);
-	}
+	PlayMontage(DeathIronMontage, FName("Death Iron 1"));
 }
 
 void AMainCharacter::PlayReloadMontage() const
 {
 	if (!Combat || !Combat->EquippedWeapon) return;
 
-	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-	if (AnimInstance && ReloadMontage)
+	FName SectionName;
+	switch (Combat->EquippedWeapon->GetWeaponType())
 	{
-		AnimInstance->Montage_Play(ReloadMontage);
-		FName SectionName;
-		switch (Combat->EquippedWeapon->GetWeaponType())
-		{
-		case EWeaponType::EWT_AssaultRifle:
-			SectionName = FName("AssaultRifle");
-			break;
-		case EWeaponType::EWT_RocketLauncher:
-			SectionName = FName("RocketLauncher");
-			break;
-		case EWeaponType::EWT_Pistol:
-			SectionName = FName("Pistol");
-			break;
-		case EWeaponType::EWT_SMG:
-			SectionName = FName("SMG");
-			break;
-		case EWeaponType::EWT_Shotgun:
-			SectionName = FName("Shotgun");
-			break;
-		case EWeaponType::EWT_SniperRifle:
-			SectionName = FName("SniperRifle");
-			break;
-		case EWeaponType::EWT_GrenadeLauncher:
-			SectionName = FName("GrenadeLauncher");
-			break;
-		case EWeaponType::EWT_MAX:
-			SectionName = FName("MAX");
-			break;
-		}
-		AnimInstance->Montage_JumpToSection(SectionName);
+	case EWeaponType::EWT_AssaultRifle:
+		SectionName = FName("AssaultRifle");
+		break;
+	case EWeaponType::EWT_RocketLauncher:
+		SectionName = FName("RocketLauncher");
+		break;
+	case EWeaponType::EWT_Pistol:
+		SectionName = FName("Pistol");
+		break;
+	case EWeaponType::EWT_SMG:
+		SectionName = FName("SMG");
+		break;
+	case EWeaponType::EWT_Shotgun:
+		SectionName = FName("Shotgun");
+		break;
+	case EWeaponType::EWT_SniperRifle:
+		SectionName = FName("SniperRifle");
+		break;
+	case EWeaponType::EWT_GrenadeLauncher:
+		SectionName = FName("GrenadeLauncher");
+		break;
+	case EWeaponType::EWT_MAX:
+		SectionName = FName("MAX");
+		break;
 	}
+
+	PlayMontage(ReloadMontage, SectionName);
+
 	Combat->SetCombatState(ECombatState::ECS_Unoccupied);
 }
 
@@ -365,16 +403,10 @@ void AMainCharacter::PlayThrowGrenadeMontage() const
 {
 	if (!GetMesh()) return;
 	
-	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-	if (AnimInstance && ThrowGrenadeMontage)
+	PlayMontage(ThrowGrenadeMontage, FName());
+	if (Combat)
 	{
-		AnimInstance->Montage_Play(ThrowGrenadeMontage);
-		if (Combat)
-		{
-			Combat->SetCombatState(ECombatState::ECS_Unoccupied);
-		}
-
-		//ThrowGrenadeMontage->
+		Combat->SetCombatState(ECombatState::ECS_Unoccupied);
 	}
 }
 
@@ -570,6 +602,20 @@ void AMainCharacter::PostInitializeComponents()
 	}
 }
 
+void AMainCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(AMainCharacter, Health);
+	DOREPLIFETIME(AMainCharacter, FireWeaponMontage);
+	DOREPLIFETIME(AMainCharacter, HitReactMontage);
+	DOREPLIFETIME(AMainCharacter, DeathHipMontage);
+	DOREPLIFETIME(AMainCharacter, DeathIronMontage);
+	DOREPLIFETIME(AMainCharacter, ReloadMontage);
+	DOREPLIFETIME(AMainCharacter, ThrowGrenadeMontage);
+	DOREPLIFETIME(AMainCharacter, MyOverheadWidget);
+}
+
 void AMainCharacter::SetOverlappingWeapon(AWeapon* Weapon)
 {
 	// When the overlap ends, we should hide the PickupWidget's text. To make that, we need firstly 'ShowPickupWidget(false)' before we assign the
@@ -598,19 +644,13 @@ void AMainCharacter::PlayFireMontage(bool bAiming) const
 {
 	if (!Combat || !Combat->EquippedWeapon) return;
 
-	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-	if (AnimInstance && FireWeaponMontage)
-	{
-		AnimInstance->Montage_Play(FireWeaponMontage);
-		const FName SectionName = bAiming ? FName("Aim_Fire") : FName("Hip_Fire");
-		AnimInstance->Montage_JumpToSection(SectionName);
-	}
+	PlayMontage(FireWeaponMontage, bAiming ? FName("Aim_Fire") : FName("Hip_Fire"));
 }
 
 bool AMainCharacter::IsWeaponEquipped() const
 {
-	if (Combat && GetPlayerState())
-	UE_LOG(LogTemp, Display, TEXT("Name %s, IsEquipped %s"), *GetPlayerState()->GetPlayerName(), Combat->EquippedWeapon ? TEXT("yes") : TEXT("no"));
+	//if (Combat && GetPlayerState())
+	//UE_LOG(LogTemp, Display, TEXT("Name %s, IsEquipped %s"), *GetPlayerState()->GetPlayerName(), Combat->EquippedWeapon ? TEXT("yes") : TEXT("no"));
 
 	return (Combat && Combat->EquippedWeapon);
 }
@@ -625,13 +665,64 @@ bool AMainCharacter::IsFireButtonPressed() const
 	return (Combat && Combat->bFireButtonPressed);
 }
 
+void AMainCharacter::OnRep_SetHealth(const float PrevHealthValue)
+{
+	const bool IsHealthIncreased = PrevHealthValue < Health;
+	HandleHealth(IsHealthIncreased);
+}
+
+void AMainCharacter::Multicast_PlayMontage_Implementation(UAnimMontage* MontageToPlay, const FName SectionName) const
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance)
+	{
+		AnimInstance->Montage_Play(MontageToPlay);
+		if (!SectionName.IsNone())
+			AnimInstance->Montage_JumpToSection(SectionName);
+	}
+}
+
+void AMainCharacter::Server_PlayMontage_Implementation(UAnimMontage* MontageToPlay, const FName SectionName) const
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance)
+	{
+		AnimInstance->Montage_Play(MontageToPlay);
+		if (!SectionName.IsNone())
+			AnimInstance->Montage_JumpToSection(SectionName);
+	}
+}
+
+void AMainCharacter::PlayMontage(UAnimMontage* MontageToPlay, const FName SectionName) const
+{
+	if (!MontageToPlay)
+		return;
+
+	if (GetLocalRole() < ROLE_Authority)
+	{
+		Server_PlayMontage(MontageToPlay, SectionName);
+	}
+	else
+	{
+		Multicast_PlayMontage(MontageToPlay, SectionName);
+	}
+}
+
+void AMainCharacter::Server_SetHealth_Implementation(const float HealthValue)
+{
+	float PrevHealthValue = Health;
+
+	Health = HealthValue;
+	OnRep_SetHealth(PrevHealthValue);
+
+	UpdateOverHeadWidget();
+}
+
 void AMainCharacter::SetHealth(const float HealthValue)
 {
 	if (HealthValue < 0.f || HealthValue > MaxHealth) return;
 	
-	const bool IsHealthIncreased = Health < HealthValue;
-	Health = HealthValue;
-	HandleHealth(IsHealthIncreased);
+	Server_SetHealth(HealthValue);
 }
 
 void AMainCharacter::HandleHealth(const bool IsHealthUp)
@@ -654,11 +745,16 @@ void AMainCharacter::SetIsRespawned()
 
 void AMainCharacter::HandleIsRespawned()
 {
-	ShooterPlayerController = ShooterPlayerController ? ShooterPlayerController : Cast<AShooterPlayerController>(GetController());
-	if (ShooterPlayerController)
+	if (!ShooterPlayerController)
 	{
-		ShooterPlayerController->RefreshHUD();
+		ShooterPlayerController = Cast<AShooterPlayerController>(GetController());
+		if (!ShooterPlayerController)
+		{
+			return;
+		}
 	}
+
+	ShooterPlayerController->RefreshHUD();
 }
 
 ECombatState AMainCharacter::GetCombatState() const
@@ -673,3 +769,4 @@ void AMainCharacter::SetCombatState(ECombatState State)
 		Combat->SetCombatState(State);
 	}
 }
+

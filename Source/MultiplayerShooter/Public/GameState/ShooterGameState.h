@@ -6,6 +6,9 @@
 #include "GameFramework/GameState.h"
 #include "ShooterGameState.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGameStateChanged, FName, State);
+
+
 /**
  * 
  */
@@ -36,4 +39,9 @@ private:
 public:
 	FORCEINLINE float GetTopScore() const { return TopScore; }
 	 FORCEINLINE const TArray<class AShooterPlayerState*>& GetTopScorePlayerStates() const { return TopScorePlayerStates; }
+
+	 UPROPERTY(BlueprintAssignable)
+	 FOnGameStateChanged OnGameStateChanged;
+
+	 virtual void OnRep_MatchState() override;
 };

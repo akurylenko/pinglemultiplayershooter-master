@@ -261,6 +261,9 @@ private:
 	UFUNCTION()
 	void LaunchGrenade(const FVector_NetQuantize& Target);
 
+	UFUNCTION(Server, Reliable)
+	void Server_LaunchGrenade(const FVector_NetQuantize& Target);
+
 	/* Show the grenade when throwing and hide the grenade when launching it. */
 	void ShowGrenadeAttached(bool IsVisible);
 

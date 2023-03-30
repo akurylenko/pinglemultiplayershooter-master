@@ -25,6 +25,7 @@ public:
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	virtual void PostInitializeComponents() override;
+	virtual void GetLifetimeReplicatedProps(TArray< FLifetimeProperty >& OutLifetimeProps) const override;
 	
 protected:
 	virtual void BeginPlay() override;
@@ -55,6 +56,8 @@ public:
 	/* Display the sniper scope effect when aiming. */
 	UFUNCTION(BlueprintImplementableEvent)
 	void ShowSniperScopeWidget(bool bShowScope);
+
+	void UpdateOverHeadWidget();
 	
 private:
 	UPROPERTY(VisibleAnywhere, Category = Camera)
@@ -68,6 +71,12 @@ private:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	class UWidgetComponent* OverheadWidget;
+
+	UPROPERTY(EditAnywhere, Category = Widget, ReplicatedUsing = OnRep_UpdateOverHeadWidget)
+	class UOverheadWidget* MyOverheadWidget;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<UOverheadWidget> MyOverheadWidgetClass;
 
 	UPROPERTY()
 	class AWeapon* OverlappingWeapon;
@@ -95,22 +104,22 @@ private:
 	/**
 	 *	Animation Montage
 	 */
-	UPROPERTY(EditAnywhere, Category = Combat)
+	UPROPERTY(EditAnywhere, Category = Combat, Replicated)
 	UAnimMontage* FireWeaponMontage;
 
-	UPROPERTY(EditAnywhere, Category = Combat)
+	UPROPERTY(EditAnywhere, Category = Combat, Replicated)
 	UAnimMontage* HitReactMontage;
 
-	UPROPERTY(EditAnywhere, Category = Combat)
+	UPROPERTY(EditAnywhere, Category = Combat, Replicated)
 	UAnimMontage* DeathHipMontage;
 
-	UPROPERTY(EditAnywhere, Category = Combat)
+	UPROPERTY(EditAnywhere, Category = Combat, Replicated)
 	UAnimMontage* DeathIronMontage;
 
-	UPROPERTY(EditAnywhere, Category = Combat)
+	UPROPERTY(EditAnywhere, Category = Combat, Replicated)
 	UAnimMontage* ReloadMontage;
 
-	UPROPERTY(EditAnywhere, Category = Combat)
+	UPROPERTY(EditAnywhere, Category = Combat, Replicated)
 	UAnimMontage* ThrowGrenadeMontage;
 
 	/* Set a threshold between camera and the character to avoid blocking. */
@@ -126,7 +135,7 @@ private:
 	UPROPERTY(EditAnywhere, Category = PlayerStats)
 	float MaxHealth = 100.f;
 	
-	UPROPERTY(VisibleAnywhere, Category = PlayerStats)
+	UPROPERTY(VisibleAnywhere, Category = PlayerStats, ReplicatedUsing = OnRep_SetHealth)
 	float Health = 100.f;
 
 	UPROPERTY(VisibleAnywhere, Category = PlayerStats)
@@ -212,7 +221,9 @@ public:
 	FORCEINLINE ETurningInPlace GetTuringInPlace() const { return TurningInPlace; }
 	bool IsFireButtonPressed() const;
 	FORCEINLINE UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+	UFUNCTION(BlueprintCallable)
 	FORCEINLINE float GetHealth() const { return Health; }
+	UFUNCTION(BlueprintCallable)
 	FORCEINLINE float GetMaxHealth() const { return MaxHealth; }
 	void SetHealth(const float HealthValue);
 	void HandleHealth(const bool IsHealthUp);
@@ -224,4 +235,26 @@ public:
 	UAnimMontage* GetReloadMontage() const { return ReloadMontage; }
 	UStaticMeshComponent* GetGrenadeAttached() const { return GrenadeAttached; }
 	UBuffComponent* GetBuff() const { return Buff; }
+
+protected:
+	UFUNCTION()
+	void OnRep_SetHealth(const float PrevHealthValue);
+
+	UFUNCTION(Server, Reliable)
+	void Server_SetHealth(const float HealthValue);
+
+	UFUNCTION(NetMulticast, Unreliable)
+	void Multicast_PlayMontage(UAnimMontage* MontageToPlay, const FName SectionName) const;
+
+	UFUNCTION(Server, Reliable)
+	void Server_PlayMontage(UAnimMontage* MontageToPlay, const FName SectionName) const;
+
+	UFUNCTION()
+	void PlayMontage(UAnimMontage* MontageToPlay, const FName SectionName) const;
+
+	UFUNCTION()
+	void OnRep_UpdateOverHeadWidget();
+
+	UFUNCTION(NetMulticast, Unreliable)
+	void Multicast_UpdateOverHeadWidget();
 };

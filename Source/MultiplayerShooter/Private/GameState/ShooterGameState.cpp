@@ -5,6 +5,7 @@
 
 #include "GameFramework/PlayerState.h"
 #include "Kismet/GameplayStatics.h"
+#include "GameMode/ShooterGameMode.h"
 #include "Net/UnrealNetwork.h"
 #include "PlayerController/ShooterPlayerController.h"
 #include "PlayerState/ShooterPlayerState.h"
@@ -53,4 +54,17 @@ void AShooterGameState::HandleTopScorePlayerStates()
 	
 	// Updating the TopScorePlayer in the HUD
 	ShooterPlayerController->UpdateTopScorePlayer();
+}
+
+void AShooterGameState::OnRep_MatchState()
+{
+	Super::OnRep_MatchState();
+
+	if (!GetWorld())
+	{
+		return;
+	}
+
+	OnGameStateChanged.Broadcast(GetMatchState());
+
 }

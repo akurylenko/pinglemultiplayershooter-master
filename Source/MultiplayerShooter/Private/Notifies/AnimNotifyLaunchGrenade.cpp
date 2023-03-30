@@ -3,6 +3,7 @@
 
 #include "Notifies/AnimNotifyLaunchGrenade.h"
 #include "Notifies/AnimNotifyReload.h"
+#include "ShooterComponents/CombatComponent.h"
 #include "Character/MainCharacter.h"
 
 void UAnimNotifyLaunchGrenade::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, const FAnimNotifyEventReference& EventReference)

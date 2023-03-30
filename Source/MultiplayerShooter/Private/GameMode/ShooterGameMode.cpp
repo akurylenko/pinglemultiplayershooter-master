@@ -6,9 +6,13 @@
 #include "GameFramework/PlayerStart.h"
 #include "GameFramework/PlayerState.h"
 #include "GameState/ShooterGameState.h"
+#include "GameInstance/MultiShooterGameInstance.h"
 #include "Kismet/GameplayStatics.h"
 #include "PlayerController/ShooterPlayerController.h"
 #include "PlayerState/ShooterPlayerState.h"
+#include "SaveGame/SaveGameSubsystem.h"
+#include "Misc/CoreDelegates.h"
+
 
 namespace MatchState
 {
@@ -25,6 +29,12 @@ void AShooterGameMode::BeginPlay()
 	Super::BeginPlay();
 	
 	LevelStartingTime = GetWorld()->GetTimeSeconds();
+
+	UMultiShooterGameInstance* GameInstance = Cast<UMultiShooterGameInstance>(GetGameInstance());
+	if (GameInstance)
+	{
+		CurrentMapNum = GameInstance->LoadMapsNum();
+	}
 }
 
 void AShooterGameMode::Tick(float DeltaSeconds)
@@ -57,6 +67,73 @@ void AShooterGameMode::OnMatchStateSet()
 		if (AShooterPlayerController* ShooterPlayerController = Cast<AShooterPlayerController>(*It))
 		{
 			ShooterPlayerController->OnMatchStateSet(MatchState);
+		}
+	}
+}
+
+void AShooterGameMode::SaveGame()
+{
+	USaveGameSubsystem* SG = GetGameInstance()->GetSubsystem<USaveGameSubsystem>();
+	// Immediately auto save on death
+	SG->WriteSaveGame();
+}
+
+void AShooterGameMode::InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage)
+{
+	Super::InitGame(MapName, Options, ErrorMessage);
+
+	// (Save/Load logic moved into new SaveGameSubsystem)
+	USaveGameSubsystem* SG = GetGameInstance()->GetSubsystem<USaveGameSubsystem>();
+
+	// Optional slot name (Falls back to slot specified in SaveGameSettings class/INI otherwise)
+	FString SelectedSaveSlot = UGameplayStatics::ParseOption(Options, "SaveGame");
+	SG->LoadSaveGame(SelectedSaveSlot);
+}
+
+void AShooterGameMode::HandleStartingNewPlayer_Implementation(APlayerController* NewPlayer)
+{
+	// Calling Before Super:: so we set variables before 'USaveGameSubsystem' is called in PlayerController (which is where we instantiate UI)
+	USaveGameSubsystem* SG = GetGameInstance()->GetSubsystem<USaveGameSubsystem>();
+	SG->HandleStartingNewPlayer(NewPlayer);
+
+	Super::HandleStartingNewPlayer_Implementation(NewPlayer);
+}
+
+void AShooterGameMode::ChangeMap()
+{
+	UWorld* World = GetWorld();
+	if (World && CurrentMapNum < MapNames.Num() - 1)
+	{
+		bUseSeamlessTravel = true;
+
+		CurrentMapNum++;
+
+		SaveGame();
+
+		if (MapNames.IsEmpty())
+		{
+			World->ServerTravel(FString("/Game/Maps/StartupMap?listen"));
+		}
+		else if (MapNames.Num() > 1)
+		{
+			FString MapName = MapNames[FMath::RandRange(0, MapNames.Num() - 1)];
+			
+			FString CurrentLevelName = GetWorld()->GetMapName();
+			CurrentLevelName.RemoveFromStart(GetWorld()->StreamingLevelsPrefix);
+
+			while (MapName == CurrentLevelName)
+			{
+				MapName = MapNames[FMath::RandRange(0, MapNames.Num() - 1)];
+			}
+
+
+			World->ServerTravel(FString("/Game/Maps/" + MapName + "?listen"));
+		}
+		else
+		{
+			FString MapName = MapNames[0];
+
+			World->ServerTravel(FString("/Game/Maps/" + MapName + "?listen"));
 		}
 	}
 }

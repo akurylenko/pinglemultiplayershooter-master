@@ -2,6 +2,8 @@
 
 
 #include "HUD/OverheadWidget.h"
+#include "Components/ProgressBar.h"
+#include "Components/SizeBox.h"
 #include "Components/TextBlock.h"
 #include "GameFramework/GameModeBase.h"
 #include "GameFramework/PlayerState.h"
@@ -60,6 +62,14 @@ void UOverheadWidget::ShowPlayerName(APawn* InPawn)
 		const FString PlayerName = PlayerState->GetPlayerName();
 		const FString PlayerNameString = FString::Printf(TEXT("Player Name is: %s"), *PlayerName);
 		SetDisplayText(PlayerNameString);
+	}
+}
+
+void UOverheadWidget::UpdateHealtBar(float Health, float MaxHealth)
+{
+	if (HealthBar)
+	{
+		HealthBar->SetPercent(Health / MaxHealth);
 	}
 }
 

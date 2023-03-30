@@ -11,10 +11,8 @@ namespace MatchState
 {
 	extern const FName Cooldown;
 }
+ 
 
-/**
- * 
- */
 UCLASS()
 class MULTIPLAYERSHOOTER_API AShooterGameMode : public AGameMode
 {
@@ -30,6 +28,12 @@ protected:
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void OnMatchStateSet() override;
 	
+	virtual void SaveGame();
+
+	virtual void InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage) override;
+
+	virtual void HandleStartingNewPlayer_Implementation(APlayerController* NewPlayer) override;
+
 private:
 	/** The time cost for entering the map */
 	float LevelStartingTime = 0.f;
@@ -54,4 +58,18 @@ public:
 	FORCEINLINE float GetWarmupTime() const { return WarmupTime; }
 	FORCEINLINE float GetMatchTime() const { return MatchTime; }
 	FORCEINLINE float GetCooldownTime() const { return CooldownTime; }
+
+	FORCEINLINE void SetCurrentMapNum(float CurrentNum) { CurrentMapNum = CurrentNum; }
+	FORCEINLINE float GetCurrentMapNum() { return CurrentMapNum; }
+
+
+	UFUNCTION()
+	virtual void ChangeMap();
+protected:
+	class UMultiShooterSaveGame* CurrentSaveGame;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TArray<FString> MapNames;
+
+	int32 CurrentMapNum = 0;
 };

@@ -523,6 +523,11 @@ void UCombatComponent::LaunchGrenade(const FVector_NetQuantize& Target)
 {
 	if (!MainCharacter || !MainCharacter->GetMesh()) return;
 	
+	Server_LaunchGrenade(Target);
+}
+
+void UCombatComponent::Server_LaunchGrenade_Implementation(const FVector_NetQuantize& Target)
+{
 	// Spawn and launch grenade.
 	if (const UStaticMeshComponent* GrenadeMesh = MainCharacter->GetGrenadeAttached())
 	{
@@ -532,7 +537,7 @@ void UCombatComponent::LaunchGrenade(const FVector_NetQuantize& Target)
 		// original location to avoid collision.
 		constexpr float SafeDist = 50.f;
 		const FVector SpawnLocation = GrenadeMesh->GetComponentLocation() + Dir.GetSafeNormal() * SafeDist;
-		
+
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.Owner = MainCharacter;
 		SpawnParams.Instigator = MainCharacter;
@@ -543,7 +548,7 @@ void UCombatComponent::LaunchGrenade(const FVector_NetQuantize& Target)
 				SpawnLocation,
 				Dir.Rotation(),
 				SpawnParams
-			);
+				);
 		}
 	}
 }
@@ -606,7 +611,7 @@ void UCombatComponent::HandleCombatState()
 		MainCharacter->PlayReloadMontage();
 		break;
 	case ECombatState::ECS_Throwing:
-		MainCharacter->PlayThrowGrenadeMontage();
+		//MainCharacter->PlayThrowGrenadeMontage();
 		ShowGrenadeAttached(true);
 		break;
 	case ECombatState::ECS_MAX:

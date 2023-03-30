@@ -44,6 +44,12 @@ protected:
 	UFUNCTION(Server, Reliable, WithValidation)
 	void Server_SetAmmo(const int32 Amount);
 
+	UFUNCTION(NetMulticast, Unreliable)
+	void Multicast_Fire(const FVector& TraceHitTarget);
+
+	UFUNCTION(Server, Reliable)
+	void Server_Fire(const FVector& TraceHitTarget);
+
 	UFUNCTION()
 	virtual void OnSphereBeginOverlap(
 		UPrimitiveComponent* OverlappedComponent,
