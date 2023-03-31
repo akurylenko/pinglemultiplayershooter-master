@@ -80,23 +80,20 @@ protected:
 	UFUNCTION()
 	virtual void OnRep_EquipWeapon(AWeapon* PrevWeapon);
 
-	UFUNCTION(Server, Reliable, WithValidation)
+	UFUNCTION(Server, Reliable)
 	void Server_EquipWeapon(class AWeapon* WeaponToEquip);
 
 	UFUNCTION()
 	virtual void OnRep_SetCombatState();
 
-	UFUNCTION(Server, Reliable, WithValidation)
+	UFUNCTION(Server, Reliable)
 	void Server_Reload();
 
 	UFUNCTION()
 	void OnRep_SetAiming(bool PrevIsAiming);
 
-	UFUNCTION(Server, Reliable, WithValidation)
+	UFUNCTION(Server, Reliable)
 	void Server_SetAiming(bool bIsAiming);
-
-	UFUNCTION()
-	void OnRep_SetHitTarget(FVector VHitTarget);
 
 	UFUNCTION(Server, Reliable)
 	void Server_SetHitTarget(FVector VHitTarget);
@@ -104,7 +101,7 @@ protected:
 	UFUNCTION()
 	void OnRep_SetCarriedAmmo(int32 PrevAmount);
 
-	UFUNCTION(Server, Reliable, WithValidation)
+	UFUNCTION(Server, Reliable)
 	void Server_SetCarriedAmmo(int32 Amount);
 
 private:
@@ -160,7 +157,7 @@ private:
 	UFUNCTION()
 	virtual void OnRep_Fire();
 
-	UFUNCTION(Server, Reliable, WithValidation)
+	UFUNCTION(Server, Reliable)
 	void Server_Fire();
 
 	void Fire();
@@ -198,7 +195,7 @@ private:
 
 	/* HitTarget can only be calculated on the local machine, because 'TraceUnderCrosshair' is a machine-related function.
 	 * HitTarget can be transmitted as a parameter in the RPCs to let the server know. */
-	UPROPERTY(ReplicatedUsing = OnRep_SetHitTarget)
+	UPROPERTY(Replicated)
 	FVector HitTarget;
 	
 	float VelocityFactor = 0.f;

@@ -6,7 +6,6 @@
 #include "GameFramework/PlayerStart.h"
 #include "GameFramework/PlayerState.h"
 #include "GameState/ShooterGameState.h"
-#include "GameInstance/MultiShooterGameInstance.h"
 #include "Kismet/GameplayStatics.h"
 #include "PlayerController/ShooterPlayerController.h"
 #include "PlayerState/ShooterPlayerState.h"
@@ -30,11 +29,13 @@ void AShooterGameMode::BeginPlay()
 	
 	LevelStartingTime = GetWorld()->GetTimeSeconds();
 
-	UMultiShooterGameInstance* GameInstance = Cast<UMultiShooterGameInstance>(GetGameInstance());
-	if (GameInstance)
-	{
-		CurrentMapNum = GameInstance->LoadMapsNum();
-	}
+	//UMultiShooterGameInstance* GameInstance = Cast<UMultiShooterGameInstance>(GetGameInstance());
+	//if (GameInstance)
+	//{
+	//	CurrentMapNum = GameInstance->LoadMapsNum();
+	//}
+
+	CurrentMapNum = 0;
 }
 
 void AShooterGameMode::Tick(float DeltaSeconds)

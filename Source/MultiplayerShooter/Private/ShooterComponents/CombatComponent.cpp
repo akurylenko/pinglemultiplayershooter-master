@@ -108,11 +108,6 @@ void UCombatComponent::OnRep_EquipWeapon(AWeapon* PrevWeapon)
 	}
 }
 
-bool UCombatComponent::Server_EquipWeapon_Validate(AWeapon* WeaponToEquip)
-{
-	return true;
-}
-
 void UCombatComponent::Server_EquipWeapon_Implementation(AWeapon* WeaponToEquip)
 {
 	AWeapon* Prev = EquippedWeapon;
@@ -146,11 +141,6 @@ void UCombatComponent::SetCombatState(const ECombatState State)
 void UCombatComponent::OnRep_SetCarriedAmmo(int32 PrevAmount)
 {
 	HandleCarriedAmmo();
-}
-
-bool UCombatComponent::Server_SetCarriedAmmo_Validate(int32 Amount)
-{
-	return true;
 }
 
 void UCombatComponent::Server_SetCarriedAmmo_Implementation(int32 Amount)
@@ -192,11 +182,6 @@ void UCombatComponent::OnRep_SetAiming(bool PrevIsAiming)
 	}
 }
 
-bool UCombatComponent::Server_SetAiming_Validate(bool bIsAiming)
-{
-	return true;
-}
-
 void UCombatComponent::Server_SetAiming_Implementation(bool bIsAiming)
 {
 	bool PrevIsAiming = bAiming;
@@ -212,24 +197,14 @@ void UCombatComponent::SetAiming(bool bIsAiming)
 	Server_SetAiming(bIsAiming);
 }
 
-void UCombatComponent::OnRep_SetHitTarget(FVector VHitTarget)
-{
-}
-
 void UCombatComponent::Server_SetHitTarget_Implementation(FVector VHitTarget)
 {
 	HitTarget = VHitTarget;
-	OnRep_SetHitTarget(VHitTarget);
 }
 
 void UCombatComponent::SetHitTarget(FVector VHitTarget)
 {
 	Server_SetHitTarget(VHitTarget);
-}
-
-bool UCombatComponent::Server_Fire_Validate()
-{
-	return true;
 }
 
 void UCombatComponent::Server_Fire_Implementation()
@@ -444,12 +419,6 @@ void UCombatComponent::LaunchGrenadeAnimNotify()
 	}
 	// Hide the grenade mesh on all machine.
 	ShowGrenadeAttached(false);
-}
-
-
-bool UCombatComponent::Server_Reload_Validate()
-{
-	return true;
 }
 
 void UCombatComponent::Server_Reload_Implementation()
