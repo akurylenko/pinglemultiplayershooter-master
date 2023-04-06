@@ -15,44 +15,34 @@ void ALobbyGameMode::PostLogin(APlayerController* NewPlayer)
 		if (World)
 		{
 			bUseSeamlessTravel = true;
-			if (!MapNames.IsEmpty())
+
+			GetAllMapNames();
+
+			FString MapName = MapNames[FMath::RandRange(0, MapNames.Num() - 1)];
+
+			FString CurrentLevelName = GetWorld()->GetMapName();
+			CurrentLevelName.RemoveFromStart(GetWorld()->StreamingLevelsPrefix);
+
+			while (MapNames.Num() > 1 && (MapName == CurrentLevelName || MapName.Contains("_NoForPlay")))
 			{
-				GEngine->AddOnScreenDebugMessage(
-					-1,
-					15.f,
-					FColor::Cyan,
-					FString::Printf(TEXT("/Game/Maps/StartupMap"))
-				);
-
-				World->ServerTravel(FString("/Game/Maps/StartupMap?listen"));
-
+				MapName = MapNames[FMath::RandRange(0, MapNames.Num() - 1)];
 			}
-			else if (MapNames.Num() > 1)
-			{
-				FString MapName = MapNames[FMath::RandRange(0, MapNames.Num() - 1)];
 
-				GEngine->AddOnScreenDebugMessage(
-					-1,
-					15.f,
-					FColor::Cyan,
-					MapName
-				);
-
-				World->ServerTravel(FString("/Game/Maps/" + MapName + "?listen"));
-			}
-			else
-			{
-				FString MapName = MapNames[0];
-
-				GEngine->AddOnScreenDebugMessage(
-					-1,
-					15.f,
-					FColor::Cyan,
-					MapName
-				);
-
-				World->ServerTravel(FString("/Game/Maps/" + MapName + "?listen"));
-			}
+			World->ServerTravel(FString(MapName + "?listen"));
 		}
+	}
+}
+
+void ALobbyGameMode::GetAllMapNames()
+{
+	TArray<FString> temp;
+
+	IFileManager::Get().FindFilesRecursive(MapNames, *FPaths::ProjectContentDir(), TEXT("*.umap"), true, false, false);
+
+	for (int i = 0; i < MapNames.Num(); ++i) {
+		MapNames[i].ParseIntoArray(temp, TEXT("/"), true);
+		MapNames[i] = temp[temp.Num() - 1];
+		MapNames[i].ParseIntoArray(temp, TEXT("."), true);
+		MapNames[i] = temp[0];
 	}
 }

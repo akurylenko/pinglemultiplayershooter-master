@@ -23,6 +23,8 @@ public:
 	virtual void PlayerEliminated(class AMainCharacter* EliminatedCharacter, class AShooterPlayerController* VictimController, class AShooterPlayerController* AttackerController);
 	virtual void RequestRespawn(class AMainCharacter* EliminatedCharacter, class AController* EliminatedController);
 
+	virtual void StartPlay() override;
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
@@ -62,13 +64,14 @@ public:
 	FORCEINLINE void SetCurrentMapNum(float CurrentNum) { CurrentMapNum = CurrentNum; }
 	FORCEINLINE float GetCurrentMapNum() { return CurrentMapNum; }
 
+	UFUNCTION()
+	void GetAllMapNames();
 
 	UFUNCTION()
 	virtual void ChangeMap();
 protected:
 	class UMultiShooterSaveGame* CurrentSaveGame;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TArray<FString> MapNames;
 
 	int32 CurrentMapNum = 0;

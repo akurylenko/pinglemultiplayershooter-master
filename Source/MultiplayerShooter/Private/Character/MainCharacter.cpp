@@ -77,7 +77,10 @@ void AMainCharacter::BeginPlay()
 	GrenadeAttached->SetVisibility(false);
 	OnTakeAnyDamage.AddDynamic(this, &ThisClass::ReceiveDamage);
 
+	MyOverheadWidget = CreateWidget<UOverheadWidget>(GetWorld()->GetFirstPlayerController(), MyOverheadWidgetClass);
+
 	UpdateOverHeadWidget();
+
 }
 
 void AMainCharacter::Tick(float DeltaTime)
@@ -246,12 +249,6 @@ void AMainCharacter::Eliminated()
 	GetWorldTimerManager().SetTimer(RespawnTimer, this, &ThisClass::RespawnTimerFinished, TimerDelay, false);
 }
 
-
-void AMainCharacter::OnRep_UpdateOverHeadWidget()
-{
-	MyOverheadWidget = CreateWidget<UOverheadWidget>(GetWorld()->GetFirstPlayerController(), MyOverheadWidgetClass);
-}
-
 void AMainCharacter::Multicast_UpdateOverHeadWidget_Implementation()
 {
 	if (IsValid(MyOverheadWidget))
@@ -259,9 +256,6 @@ void AMainCharacter::Multicast_UpdateOverHeadWidget_Implementation()
 		if (IsLocallyControlled())
 		{
 			MyOverheadWidget->SetVisibility(ESlateVisibility::Hidden);
-
-			MyOverheadWidget->UpdateHealtBar(Health, MaxHealth);
-			MyOverheadWidget->ShowPlayerName(this);
 		}
 		else
 		{
@@ -276,11 +270,8 @@ void AMainCharacter::Multicast_UpdateOverHeadWidget_Implementation()
 
 void AMainCharacter::UpdateOverHeadWidget()
 {
-	if (!IsValid(MyOverheadWidget))
-	{
-		OnRep_UpdateOverHeadWidget();
-	}
-	if (GetLocalRole() < ROLE_Authority)
+	if (GetLocalRole() == ROLE_SimulatedProxy || 
+		GetLocalRole() == ROLE_AutonomousProxy)
 	{
 		if (IsValid(MyOverheadWidget))
 		{
@@ -298,7 +289,8 @@ void AMainCharacter::UpdateOverHeadWidget()
 			OverheadWidget->SetWidget(MyOverheadWidget);
 		}
 	}
-	else
+	else if (GetLocalRole() == ROLE_Authority ||
+			 GetLocalRole() == ROLE_MAX)
 	{
 		Multicast_UpdateOverHeadWidget();
 	}
@@ -396,6 +388,9 @@ void AMainCharacter::PlayReloadMontage() const
 	case EWeaponType::EWT_MAX:
 		SectionName = FName("MAX");
 		break;
+	default:
+		SectionName = FName("");
+		break;
 	}
 
 	PlayMontage(ReloadMontage, SectionName);
@@ -468,7 +463,7 @@ void AMainCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 	PlayerInputComponent->BindAction("SwitchFireMode", IE_Pressed, this, &ThisClass::SwitchFireModeButtonPressed);
 	PlayerInputComponent->BindAction("Reload", IE_Pressed, this, &ThisClass::ReloadButtonPressed);
 	PlayerInputComponent->BindAction("ThrowGrenade", IE_Pressed, this, &ThisClass::ThrowButtonPressed);
-
+	PlayerInputComponent->BindAction("OpenMenu", IE_Pressed, this, &ThisClass::OpenMenuPressed);
 	PlayerInputComponent->BindAxis("MoveForward", this, &ThisClass::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &ThisClass::MoveRight);
 	PlayerInputComponent->BindAxis("TurnRight", this, &ThisClass::TurnAtRate);
@@ -592,6 +587,20 @@ void AMainCharacter::ThrowButtonPressed()
 	}
 }
 
+void AMainCharacter::OpenMenuPressed()
+{
+	if (!ShooterPlayerController)
+	{
+		ShooterPlayerController = Cast<AShooterPlayerController>(GetController());
+		if (!ShooterPlayerController)
+		{
+			return;
+		}
+	}
+
+	ShooterPlayerController->OpenMenu();
+}
+
 void AMainCharacter::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
@@ -669,7 +678,7 @@ bool AMainCharacter::IsFireButtonPressed() const
 	return (Combat && Combat->bFireButtonPressed);
 }
 
-void AMainCharacter::OnRep_SetHealth(const float PrevHealthValue)
+void AMainCharacter::OnRep_SetHealth(float PrevHealthValue)
 {
 	const bool IsHealthIncreased = PrevHealthValue < Health;
 	HandleHealth(IsHealthIncreased);
@@ -712,7 +721,7 @@ void AMainCharacter::PlayMontage(UAnimMontage* MontageToPlay, const FName Sectio
 	}
 }
 
-void AMainCharacter::Server_SetHealth_Implementation(const float HealthValue)
+void AMainCharacter::Server_SetHealth_Implementation(float HealthValue)
 {
 	float PrevHealthValue = Health;
 
@@ -722,14 +731,14 @@ void AMainCharacter::Server_SetHealth_Implementation(const float HealthValue)
 	UpdateOverHeadWidget();
 }
 
-void AMainCharacter::SetHealth(const float HealthValue)
+void AMainCharacter::SetHealth(float HealthValue)
 {
 	if (HealthValue < 0.f || HealthValue > MaxHealth) return;
 	
 	Server_SetHealth(HealthValue);
 }
 
-void AMainCharacter::HandleHealth(const bool IsHealthUp)
+void AMainCharacter::HandleHealth(bool IsHealthUp)
 {
 	SetHUDHealth();
 

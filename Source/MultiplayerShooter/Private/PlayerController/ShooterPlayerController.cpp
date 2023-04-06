@@ -14,6 +14,7 @@
 #include "HUD/ShooterHUD.h"
 #include "HUD/CharacterOverlay.h"
 #include "Kismet/GameplayStatics.h"
+#include "Blueprint/WidgetBlueprintLibrary.h"
 #include "Net/UnrealNetwork.h"
 
 void AShooterPlayerController::BeginPlay()
@@ -329,6 +330,18 @@ void AShooterPlayerController::RefreshHUD()
 	RefreshHUDData();
 
 	ShooterHUD->Refresh();
+}
+
+void AShooterPlayerController::OpenMenu()
+{
+	if (!SetPlayerHUD())
+	{
+		return;
+	}
+
+	ShooterHUD->AddMenu();
+	SetShowMouseCursor(true);
+	UWidgetBlueprintLibrary::SetInputMode_UIOnlyEx(this, ShooterHUD->GetMenuWidget(), EMouseLockMode::DoNotLock);
 }
 
 void AShooterPlayerController::OnMatchStateSet(FName State)

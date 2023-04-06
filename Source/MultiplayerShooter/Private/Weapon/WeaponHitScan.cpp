@@ -24,7 +24,7 @@ void AWeaponHitScan::FireHitScan(const FVector& TraceHitTarget)
 	const FVector& Dir = TraceHitTarget - Start;
 	
 	// Scatter multiple lines when firing. For-loop each line.
-	for (uint32 i = 0; i < ScatterNum; i++)
+	for (uint32 i = 0; i < ScatterNum; ++i)
 	{
 		// Randomize the shooting direction for the scatter effect. ScatterDir is a normalized vector.
 		const FVector& ScatterDir = UKismetMathLibrary::RandomUnitVectorInConeInDegrees(Dir, ScatterAngle);

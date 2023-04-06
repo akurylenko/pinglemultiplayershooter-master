@@ -17,6 +17,10 @@ class MULTIPLAYERSHOOTER_API ALobbyGameMode : public AGameMode
 public:
 	virtual void PostLogin(APlayerController* NewPlayer) override;
 
+
+	UFUNCTION()
+	void GetAllMapNames();
+
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		TArray<FString> MapNames;

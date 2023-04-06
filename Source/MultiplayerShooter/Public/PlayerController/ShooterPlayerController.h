@@ -45,6 +45,9 @@ public:
 	void SetHUDTime();
 	void RefreshHUD();
 
+	/*Open Menu Widget*/
+	void OpenMenu();
+
 	/** Once the game mode's MatchState is changed, the player controller's MatchState callback is going to be executed. */
 	UFUNCTION()
 	void OnMatchStateSet(FName State);

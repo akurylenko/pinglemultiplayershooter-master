@@ -45,6 +45,7 @@ private:
 	void SwitchFireModeButtonPressed();
 	void ReloadButtonPressed();
 	void ThrowButtonPressed();
+	void OpenMenuPressed();
 
 public:
 	void SetOverlappingWeapon(class AWeapon* Weapon);
@@ -72,7 +73,7 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	class UWidgetComponent* OverheadWidget;
 
-	UPROPERTY(EditAnywhere, Category = Widget, ReplicatedUsing = OnRep_UpdateOverHeadWidget)
+	UPROPERTY(EditAnywhere, Category = Widget, Replicated)
 	class UOverheadWidget* MyOverheadWidget;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta = (AllowPrivateAccess = "true"))
@@ -225,8 +226,8 @@ public:
 	FORCEINLINE float GetHealth() const { return Health; }
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE float GetMaxHealth() const { return MaxHealth; }
-	void SetHealth(const float HealthValue);
-	void HandleHealth(const bool IsHealthUp);
+	void SetHealth(float HealthValue);
+	void HandleHealth(bool IsHealthUp);
 	FORCEINLINE void SetMaxHealth(const float MaxHealthValue) { MaxHealth = MaxHealthValue; }
 	void SetIsRespawned();
 	void HandleIsRespawned();
@@ -238,10 +239,10 @@ public:
 
 protected:
 	UFUNCTION()
-	void OnRep_SetHealth(const float PrevHealthValue);
+	void OnRep_SetHealth(float PrevHealthValue);
 
 	UFUNCTION(Server, Reliable)
-	void Server_SetHealth(const float HealthValue);
+	void Server_SetHealth(float HealthValue);
 
 	UFUNCTION(NetMulticast, Unreliable)
 	void Multicast_PlayMontage(UAnimMontage* MontageToPlay, const FName SectionName) const;
@@ -251,9 +252,6 @@ protected:
 
 	UFUNCTION()
 	void PlayMontage(UAnimMontage* MontageToPlay, const FName SectionName) const;
-
-	UFUNCTION()
-	void OnRep_UpdateOverHeadWidget();
 
 	UFUNCTION(NetMulticast, Unreliable)
 	void Multicast_UpdateOverHeadWidget();

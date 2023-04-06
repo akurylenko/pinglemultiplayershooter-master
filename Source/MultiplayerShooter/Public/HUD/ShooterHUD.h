@@ -7,9 +7,7 @@
 #include "GameFramework/HUD.h"
 #include "ShooterHUD.generated.h"
 
-/**
- * 
- */
+
 UCLASS()
 class MULTIPLAYERSHOOTER_API AShooterHUD : public AHUD
 {
@@ -29,8 +27,13 @@ public:
 	 ** available since the MatchState is set, we need to call this function in BeginPlay() */
 	void AddAnnouncement();
 
+	/** Add Menu Widget when Player called it */
+	void AddMenu();
+
 	/* Refresh the HUD when the character overlay is added to the viewport or the character is respawned. */
 	void Refresh();
+
+	class UWidget* GetMenuWidget();
 	
 protected:
 	virtual void BeginPlay() override;
@@ -51,6 +54,14 @@ private:
 	/** Announcement Widget */
 	UPROPERTY()
 	class UAnnouncementWidget* Announcement;
+
+	/** TSubclass of the Menu Widget */
+	UPROPERTY(EditDefaultsOnly, Category = Match)
+	TSubclassOf<class UUserWidget> MenuClass;
+
+	/** Manu Widget */
+	UPROPERTY()
+	class UGameMenuWidget* Menu;
 	
 	/**
 	 *	Draw HUD cross hairs

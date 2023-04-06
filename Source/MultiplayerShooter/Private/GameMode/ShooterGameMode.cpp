@@ -29,11 +29,7 @@ void AShooterGameMode::BeginPlay()
 	
 	LevelStartingTime = GetWorld()->GetTimeSeconds();
 
-	//UMultiShooterGameInstance* GameInstance = Cast<UMultiShooterGameInstance>(GetGameInstance());
-	//if (GameInstance)
-	//{
-	//	CurrentMapNum = GameInstance->LoadMapsNum();
-	//}
+	GetAllMapNames();
 
 	CurrentMapNum = 0;
 }
@@ -79,16 +75,21 @@ void AShooterGameMode::SaveGame()
 	SG->WriteSaveGame();
 }
 
-void AShooterGameMode::InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage)
-{
-	Super::InitGame(MapName, Options, ErrorMessage);
 
+void AShooterGameMode::StartPlay()
+{
+	Super::StartPlay();
 	// (Save/Load logic moved into new SaveGameSubsystem)
 	USaveGameSubsystem* SG = GetGameInstance()->GetSubsystem<USaveGameSubsystem>();
 
 	// Optional slot name (Falls back to slot specified in SaveGameSettings class/INI otherwise)
-	FString SelectedSaveSlot = UGameplayStatics::ParseOption(Options, "SaveGame");
+	FString SelectedSaveSlot = UGameplayStatics::ParseOption(OptionsString, "SaveGame");
 	SG->LoadSaveGame(SelectedSaveSlot);
+}
+
+void AShooterGameMode::InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage)
+{
+	Super::InitGame(MapName, Options, ErrorMessage);
 }
 
 void AShooterGameMode::HandleStartingNewPlayer_Implementation(APlayerController* NewPlayer)
@@ -98,6 +99,20 @@ void AShooterGameMode::HandleStartingNewPlayer_Implementation(APlayerController*
 	SG->HandleStartingNewPlayer(NewPlayer);
 
 	Super::HandleStartingNewPlayer_Implementation(NewPlayer);
+}
+
+void AShooterGameMode::GetAllMapNames()
+{
+	TArray<FString> temp;
+
+	IFileManager::Get().FindFilesRecursive(MapNames, *FPaths::ProjectContentDir(), TEXT("*.umap"), true, false, false);
+
+	for (int i = 0; i < MapNames.Num(); ++i) {
+		MapNames[i].ParseIntoArray(temp, TEXT("/"), true);
+		MapNames[i] = temp[temp.Num() - 1];
+		MapNames[i].ParseIntoArray(temp, TEXT("."), true);
+		MapNames[i] = temp[0];
+	}
 }
 
 void AShooterGameMode::ChangeMap()
@@ -111,31 +126,19 @@ void AShooterGameMode::ChangeMap()
 
 		SaveGame();
 
-		if (MapNames.IsEmpty())
+		FString MapName = MapNames[FMath::RandRange(0, MapNames.Num() - 1)];
+
+		FString CurrentLevelName = GetWorld()->GetMapName();
+		CurrentLevelName.RemoveFromStart(GetWorld()->StreamingLevelsPrefix);
+
+		int i = 0;
+		while (MapNames.Num() > 1 && (MapName == CurrentLevelName || MapName.Contains("_NoForPlay")) && i < MapNames.Num())
 		{
-			World->ServerTravel(FString("/Game/Maps/StartupMap?listen"));
+			MapName = MapNames[FMath::RandRange(0, MapNames.Num() - 1)];
+			++i;
 		}
-		else if (MapNames.Num() > 1)
-		{
-			FString MapName = MapNames[FMath::RandRange(0, MapNames.Num() - 1)];
-			
-			FString CurrentLevelName = GetWorld()->GetMapName();
-			CurrentLevelName.RemoveFromStart(GetWorld()->StreamingLevelsPrefix);
 
-			while (MapName == CurrentLevelName)
-			{
-				MapName = MapNames[FMath::RandRange(0, MapNames.Num() - 1)];
-			}
-
-
-			World->ServerTravel(FString("/Game/Maps/" + MapName + "?listen"));
-		}
-		else
-		{
-			FString MapName = MapNames[0];
-
-			World->ServerTravel(FString("/Game/Maps/" + MapName + "?listen"));
-		}
+		World->ServerTravel(FString(MapName + "?listen"));
 	}
 }
 

@@ -5,6 +5,7 @@
 #include "Components/TextBlock.h"
 #include "HUD/CharacterOverlay.h"
 #include "HUD/AnnouncementWidget.h"
+#include "HUD/GameMenuWidget.h"
 #include "Character/MainCharacter.h"
 #include "ShooterComponents/CombatComponent.h"
 #include "PlayerController/ShooterPlayerController.h"
@@ -26,7 +27,6 @@ void AShooterHUD::DrawHUD()
 		DrawCrosshairs(HUDPackage.CrosshairsBottom, FVector2D(0.f, HUDPackage.CrosshairsCurrentSpread));
 	}
 
-	AddAnnouncement();
 	AddCharacterOverlay();
 }
 
@@ -34,8 +34,7 @@ void AShooterHUD::BeginPlay()
 {
 	Super::BeginPlay();
 
-	//AddAnnouncement();
-	//AddCharacterOverlay();
+	AddAnnouncement();
 }
 
 void AShooterHUD::AddCharacterOverlay()
@@ -44,7 +43,6 @@ void AShooterHUD::AddCharacterOverlay()
 	{
 		return;
 	}
-	// APlayerController* PlayerController = GetOwningPlayerController();
 	if (!CharacterOverlay)
 	{
 		CharacterOverlay = CreateWidget<UCharacterOverlay>(GetWorld(), CharacterOverlayClass, FName("Character Overlay"));
@@ -79,6 +77,23 @@ void AShooterHUD::AddAnnouncement()
 	}
 }
 
+void AShooterHUD::AddMenu()
+{
+	if (MenuClass)
+	{
+		if (!Menu)
+		{
+			Menu = CreateWidget<UGameMenuWidget>(GetWorld(), MenuClass, FName("Menu"));
+		}
+		if (!Menu) return;
+
+		if (!Menu->IsInViewport())
+		{
+			Menu->AddToViewport();
+		}
+	}
+}
+
 void AShooterHUD::Refresh()
 {
 	if (CharacterOverlay && CharacterOverlay->DefeatedMsg)
@@ -89,6 +104,11 @@ void AShooterHUD::Refresh()
 			CharacterOverlay->StopAnimation(CharacterOverlay->DefeatedMsgAnim);
 		}
 	}
+}
+
+UWidget* AShooterHUD::GetMenuWidget()
+{
+	return Cast<UWidget>(Menu);
 }
 
 void AShooterHUD::DrawCrosshairs(UTexture2D* Texture, const FVector2D& Spread)

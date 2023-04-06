@@ -14,4 +14,14 @@ class MULTIPLAYERSHOOTER_API UGameMenuWidget : public UUserWidget
 {
 	GENERATED_BODY()
 	
+public:
+	UFUNCTION(BlueprintCallable, Category = GameMenu)
+	void Resume();
+
+	UFUNCTION(BlueprintCallable, Category = GameMenu)
+	void Exit();
+
+protected:
+	UFUNCTION(BlueprintCallable, Category = GameMenu)
+	void RemoveSaves();
 };

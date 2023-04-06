@@ -31,7 +31,8 @@ void USaveGameSubsystem::SetSlotName(FString NewSlotName)
 
 void USaveGameSubsystem::WriteSaveGame()
 {
-	CurrentSaveGame->SavedPlayers.Empty();
+	if (CurrentSaveGame)
+		CurrentSaveGame->SavedPlayers.Empty();
 
 	if (!GetWorld())
 	{
@@ -44,9 +45,9 @@ void USaveGameSubsystem::WriteSaveGame()
 		return;
 	}
 
-	for (int32 i = 0; i < GameState->PlayerArray.Num(); i++)
+	for (TObjectPtr<APlayerState> ShooterPS : GameState->PlayerArray)
 	{
-		AShooterPlayerState* PlayerState = Cast<AShooterPlayerState>(GameState->PlayerArray[i]);;
+		AShooterPlayerState* PlayerState = Cast<AShooterPlayerState>(ShooterPS);;
 		if (PlayerState)
 		{
 			PlayerState->SavePlayerState(CurrentSaveGame);
@@ -84,9 +85,9 @@ void USaveGameSubsystem::LoadSaveGame(FString InSlotName)
 			return;
 		}
 
-		for (int32 i = 0; i < GameState->PlayerArray.Num(); i++)
+		for (TObjectPtr<APlayerState> ShooterPS : GameState->PlayerArray)
 		{
-			AShooterPlayerState* PlayerState = Cast<AShooterPlayerState>(GameState->PlayerArray[i]);;
+			AShooterPlayerState* PlayerState = Cast<AShooterPlayerState>(ShooterPS);;
 			if (PlayerState)
 			{
 				PlayerState->LoadPlayerState(CurrentSaveGame);
@@ -106,7 +107,18 @@ void USaveGameSubsystem::LoadSaveGame(FString InSlotName)
 
 void USaveGameSubsystem::RemoveSaveGame(AShooterPlayerState* CurPlayerState)
 {
-	CurrentSaveGame->SavedPlayers.Empty();
+	if (CurrentSaveGame)
+		CurrentSaveGame->SavedPlayers.Empty();
+	else
+	{
+		CurrentSaveGame = Cast<UMultiShooterSaveGame>(UGameplayStatics::LoadGameFromSlot(CurrentSlotName, 0));
+		if (CurrentSaveGame == nullptr)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Failed to load SaveGame Data."));
+			return;
+		}
+		CurrentSaveGame->SavedPlayers.Empty();
+	}
 
 	if (!GetWorld() || !CurPlayerState)
 	{
@@ -119,18 +131,19 @@ void USaveGameSubsystem::RemoveSaveGame(AShooterPlayerState* CurPlayerState)
 		return;
 	}
 
-	for (int32 i = 0; i < GameState->PlayerArray.Num(); i++)
+	for (TObjectPtr<APlayerState> ShooterPS : GameState->PlayerArray)
 	{
-		AShooterPlayerState* PlayerState = Cast<AShooterPlayerState>(GameState->PlayerArray[i]);;
-		if (PlayerState && CurPlayerState == PlayerState)
+		AShooterPlayerState* PlayerState = Cast<AShooterPlayerState>(ShooterPS);
+		if (PlayerState)
 		{
 			PlayerState->FreePlayerState(CurrentSaveGame);
-			break; // single player only at this point
+			//break; // single player only at this point
 		}
 	}
 
 	UGameplayStatics::SaveGameToSlot(CurrentSaveGame, CurrentSlotName, 0);
 
+	OnSaveGameWritten.Broadcast(CurrentSaveGame);
 }
 
 void USaveGameSubsystem::Initialize(FSubsystemCollectionBase& Collection)
