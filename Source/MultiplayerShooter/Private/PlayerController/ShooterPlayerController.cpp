@@ -78,7 +78,7 @@ void AShooterPlayerController::UpdatePlayerHealth(float Health, float MaxHealth)
 	{
 		return;
 	}
-	
+
 	ShooterHUD->GetCharacterOverlay()->HealthBar->SetPercent(Health / MaxHealth);
 	const FString HealthText = FString::Printf(TEXT("%d / %d"), FMath::CeilToInt(Health), FMath::CeilToInt(MaxHealth));
 	ShooterHUD->GetCharacterOverlay()->HealthText->SetText(FText::FromString(HealthText));
@@ -221,11 +221,18 @@ void AShooterPlayerController::UpdateTopScorePlayer()
 		return;
 	}
 
-	auto PlayerStates = ShooterGameState->GetTopScorePlayerStates();
+	TArray<AShooterPlayerState*> PlayerStates = ShooterGameState->GetTopScorePlayerStates();
 
-	if (PlayerStates.IsEmpty() || !SetPlayerHUD() || 
-		!ShooterHUD->GetCharacterOverlay() || !ShooterHUD->GetCharacterOverlay()->TopScorePlayer)
+	if (PlayerStates.IsEmpty())
 	{
+		if (GEngine)
+			GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Yellow, FString::Printf(TEXT("UpdateTopScorePlayer PlayerStates - false")));
+		return;
+	}
+	if (!SetPlayerHUD() || !ShooterHUD->GetCharacterOverlay() || !ShooterHUD->GetCharacterOverlay()->TopScorePlayer)
+	{
+		if (GEngine)
+			GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Yellow, FString::Printf(TEXT("UpdateTopScorePlayer - false")));
 		return;
 	}
 
@@ -247,12 +254,20 @@ void AShooterPlayerController::UpdateTopScore()
 		return;
 	}
 
-	const auto PlayerStates = ShooterGameState->GetTopScorePlayerStates();
+	const TArray<AShooterPlayerState*> PlayerStates = ShooterGameState->GetTopScorePlayerStates();
 	const float TopScore = ShooterGameState->GetTopScore();
 
-	if (PlayerStates.IsEmpty() || !SetPlayerHUD() ||
-		!ShooterHUD->GetCharacterOverlay() || !ShooterHUD->GetCharacterOverlay()->TopScore)
+
+	if (PlayerStates.IsEmpty())
 	{
+		if (GEngine)
+			GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Yellow, FString::Printf(TEXT("UpdateTopScore PlayerStates - false")));
+		return;
+	}
+	if (!SetPlayerHUD() || !ShooterHUD->GetCharacterOverlay() || !ShooterHUD->GetCharacterOverlay()->TopScore)
+	{
+		if (GEngine)
+			GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Yellow, FString::Printf(TEXT("UpdateTopScore - false")));
 		return;
 	}
 	
@@ -401,7 +416,7 @@ void AShooterPlayerController::HandleMatchState()
 		}
 
 		FString WinString;
-		auto PlayerStates = ShooterGameState->GetTopScorePlayerStates();
+		TArray<AShooterPlayerState*> PlayerStates = ShooterGameState->GetTopScorePlayerStates();
 		if (PlayerStates.Num() == 0)
 		{
 			WinString = "There is no winner.";

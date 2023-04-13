@@ -36,6 +36,9 @@ public:
 	UFUNCTION(BlueprintNativeEvent)
 	void FreePlayerState(UMultiShooterSaveGame* SaveObject);
 
+
+	virtual void OnRep_Score() override;
+
 private:
 	UPROPERTY(EditAnywhere)
 	float ScoreAmount = 5.f;
@@ -53,6 +56,9 @@ protected:
 	UFUNCTION()
 	void OnRep_SetDefeats(int32 PrevDefeats);
 
-	UFUNCTION(Server, Reliable, WithValidation)
+	UFUNCTION(Server, Reliable)
 	void Server_SetDefeats(int32 NewDefeats);
+
+	UFUNCTION(Server, Reliable)
+	void Server_UpdateScore();
 };

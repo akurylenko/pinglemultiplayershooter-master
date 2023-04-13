@@ -148,7 +148,10 @@ void AShooterGameMode::PlayerEliminated(AMainCharacter* EliminatedCharacter, ASh
 
 	AShooterPlayerState* AttackerPlayerState = AttackerController->GetPlayerState<AShooterPlayerState>();
 	AShooterPlayerState* VictimPlayerState = VictimController->GetPlayerState<AShooterPlayerState>();
-	if (!AttackerPlayerState || !VictimPlayerState) return;
+	if (!AttackerPlayerState || !VictimPlayerState)
+	{
+		return;
+	}
 
 	// Need to check if it's suicide.
 	if (AttackerPlayerState != VictimPlayerState)

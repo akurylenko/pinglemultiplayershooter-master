@@ -8,6 +8,7 @@
 #include "Net/UnrealNetwork.h"
 #include "Kismet/GameplayStatics.h"
 #include "Misc/CoreDelegates.h"
+#include "Character/MainCharacter.h"
 #include "PlayerController/ShooterPlayerController.h"
 
 void AShooterPlayerState::PostInitializeComponents()
@@ -26,12 +27,22 @@ void AShooterPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 
 void AShooterPlayerState::UpdateScore()
 {
-	SetScore(GetScore() + ScoreAmount);
+	Server_UpdateScore();
+}
 
+void AShooterPlayerState::OnRep_Score()
+{
 	ShooterPlayerController = ShooterPlayerController ? ShooterPlayerController : Cast<AShooterPlayerController>(GetOwningController());
 	if (!ShooterPlayerController) return;
-	
+
 	ShooterPlayerController->UpdatePlayerScore(GetScore());
+}
+
+void AShooterPlayerState::Server_UpdateScore_Implementation()
+{
+	SetScore(GetScore() + ScoreAmount);
+
+	OnRep_Score();
 }
 
 void AShooterPlayerState::UpdateDefeats()
@@ -45,11 +56,9 @@ void AShooterPlayerState::OnRep_SetDefeats(int32 PrevDefeats)
 	if (!ShooterPlayerController) return;
 
 	ShooterPlayerController->UpdatePlayerDefeats(Defeats);
-}
-
-bool AShooterPlayerState::Server_SetDefeats_Validate(int32 NewDefeats)
-{
-	return true;
+	const AMainCharacter* MainCharacter = Cast<AMainCharacter>(ShooterPlayerController->GetCharacter());
+	if (MainCharacter)
+		ShooterPlayerController->UpdatePlayerHealth(MainCharacter->GetMaxHealth(), MainCharacter->GetMaxHealth());
 }
 
 void AShooterPlayerState::Server_SetDefeats_Implementation(int32 NewDefeats)

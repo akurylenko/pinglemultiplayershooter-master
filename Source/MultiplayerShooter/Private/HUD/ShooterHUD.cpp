@@ -27,14 +27,28 @@ void AShooterHUD::DrawHUD()
 		DrawCrosshairs(HUDPackage.CrosshairsBottom, FVector2D(0.f, HUDPackage.CrosshairsCurrentSpread));
 	}
 
-	AddCharacterOverlay();
+	if (!CharacterOverlay)
+	{
+		AddCharacterOverlay();
+	}
+	if (!Announcement)
+	{
+		AddAnnouncement();
+	}
 }
 
 void AShooterHUD::BeginPlay()
 {
 	Super::BeginPlay();
 
-	AddAnnouncement();
+	if (!CharacterOverlay && CharacterOverlayClass)
+	{
+		AddCharacterOverlay();
+	}
+	if (!Announcement)
+	{
+		AddAnnouncement();
+	}
 }
 
 void AShooterHUD::AddCharacterOverlay()

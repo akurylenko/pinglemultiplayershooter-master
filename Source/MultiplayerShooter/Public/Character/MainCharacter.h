@@ -59,6 +59,8 @@ public:
 	void ShowSniperScopeWidget(bool bShowScope);
 
 	void UpdateOverHeadWidget();
+	void SetHUDHealth();
+
 	
 private:
 	UPROPERTY(VisibleAnywhere, Category = Camera)
@@ -152,7 +154,6 @@ private:
 	UFUNCTION()
 	void ReceiveDamage(AActor* DamagedActor, float Damage, const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser);
 
-	void SetHUDHealth();
 	void PlayHitReactMontage() const;
 	void PlayDeathHipMontage() const;
 	void PlayDeathIronMontage() const;

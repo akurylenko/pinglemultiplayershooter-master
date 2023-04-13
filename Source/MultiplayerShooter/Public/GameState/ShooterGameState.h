@@ -21,20 +21,35 @@ public:
 	/** Once a player is eliminated, we then need to update the array: TopScorePlayerStates and update the TopScore player in the HUD */
 	void UpdateTopScorePlayerStates(class AShooterPlayerState* PlayerState);
 
+protected:
+
+	virtual void GetLifetimeReplicatedProps(TArray< FLifetimeProperty >& OutLifetimeProps) const override;
 
 private:
-	UPROPERTY()
+	UPROPERTY(ReplicatedUsing = OnRep_HandleTopScore)
 	float TopScore = 0.f;
 
 	/** The common code within OnRep_TopScore() */
-	void HandleTopScore();
+	void HandleTopScore(float Score);
+
+	UFUNCTION(Server, Reliable)
+	void Server_HandleTopScore(float Score);
+
+	UFUNCTION()
+	void OnRep_HandleTopScore(float Score);
 
 	/** An array contains the top score players' states */
-	UPROPERTY()
+	UPROPERTY(ReplicatedUsing = OnRep_HandleTopScorePlayerStates)
 	TArray<class AShooterPlayerState*> TopScorePlayerStates;
 
 	/** The common code within OnRep_TopScorePlayerStates() */
-	void HandleTopScorePlayerStates();
+	void HandleTopScorePlayerStates(class AShooterPlayerState* PlayerState, bool bRewrite);
+
+	UFUNCTION(Server, Reliable)
+	void Server_HandleTopScorePlayerStates(class AShooterPlayerState* PlayerState, bool bRewrite);
+
+	UFUNCTION()
+	void OnRep_HandleTopScorePlayerStates(TArray<class AShooterPlayerState*> TopScorePS);
 
 public:
 	FORCEINLINE float GetTopScore() const { return TopScore; }

@@ -14,46 +14,69 @@ void AShooterGameState::UpdateTopScorePlayerStates(AShooterPlayerState* PlayerSt
 {
 	if (!PlayerState) return;
 	
-	if (TopScorePlayerStates.Num() == 0)
+	if (TopScorePlayerStates.Num() == 0 || TopScore == PlayerState->GetScore())
 	{
-		TopScorePlayerStates.AddUnique(PlayerState);
-		TopScore = PlayerState->GetScore();
-		HandleTopScore();
-		HandleTopScorePlayerStates();
-	}
-	else if (TopScore == PlayerState->GetScore())
-	{
-		TopScorePlayerStates.AddUnique(PlayerState);
-		HandleTopScore();
-		HandleTopScorePlayerStates();
+		HandleTopScorePlayerStates(PlayerState, false);
+		HandleTopScore(PlayerState->GetScore());
 	}
 	else if (TopScore < PlayerState->GetScore())
 	{
-		TopScorePlayerStates.Empty();
-		TopScorePlayerStates.AddUnique(PlayerState);
-		TopScore = PlayerState->GetScore();
-		HandleTopScore();
-		HandleTopScorePlayerStates();
+		HandleTopScorePlayerStates(PlayerState, true);
+		HandleTopScore(PlayerState->GetScore());
 	}
 }
 
-
-void AShooterGameState::HandleTopScore()
+void AShooterGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
-	AShooterPlayerController* ShooterPlayerController = Cast<AShooterPlayerController>(UGameplayStatics::GetPlayerController(this, 0));
-	if (!ShooterPlayerController) return;
-	
-	// Updating the TopScore in the HUD
-	ShooterPlayerController->UpdateTopScore();
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(AShooterGameState, TopScore);
+	DOREPLIFETIME(AShooterGameState, TopScorePlayerStates);
 }
 
-void AShooterGameState::HandleTopScorePlayerStates()
+
+void AShooterGameState::HandleTopScore(float Score)
+{
+	Server_HandleTopScore(Score);
+}
+
+void AShooterGameState::Server_HandleTopScore_Implementation(float Score)
+{
+	TopScore = Score;
+}
+
+void AShooterGameState::OnRep_HandleTopScore(float Score)
 {
 	AShooterPlayerController* ShooterPlayerController = Cast<AShooterPlayerController>(UGameplayStatics::GetPlayerController(this, 0));
-	if (!ShooterPlayerController) return;
-	
-	// Updating the TopScorePlayer in the HUD
-	ShooterPlayerController->UpdateTopScorePlayer();
+	if (ShooterPlayerController && ShooterPlayerController->IsLocalController())
+	{
+		// Updating the TopScore in the HUD
+		ShooterPlayerController->UpdateTopScore();
+	}
+}
+
+void AShooterGameState::HandleTopScorePlayerStates(AShooterPlayerState* PlayerState, bool bRewrite)
+{
+	Server_HandleTopScorePlayerStates(PlayerState, bRewrite);
+}
+
+void AShooterGameState::Server_HandleTopScorePlayerStates_Implementation(AShooterPlayerState* PlayerState, bool bRewrite)
+{
+	if (bRewrite)
+	{
+		TopScorePlayerStates.Empty();
+	}
+	TopScorePlayerStates.AddUnique(PlayerState);
+}
+
+void AShooterGameState::OnRep_HandleTopScorePlayerStates(TArray<class AShooterPlayerState*> TopScorePS)
+{
+	AShooterPlayerController* ShooterPlayerController = Cast<AShooterPlayerController>(UGameplayStatics::GetPlayerController(this, 0));
+	if (ShooterPlayerController && ShooterPlayerController->IsLocalController())
+	{
+		// Updating the TopScorePlayer in the HUD
+		ShooterPlayerController->UpdateTopScorePlayer();
+	}
 }
 
 void AShooterGameState::OnRep_MatchState()

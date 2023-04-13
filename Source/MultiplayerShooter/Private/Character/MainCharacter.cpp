@@ -80,7 +80,8 @@ void AMainCharacter::BeginPlay()
 	MyOverheadWidget = CreateWidget<UOverheadWidget>(GetWorld()->GetFirstPlayerController(), MyOverheadWidgetClass);
 
 	UpdateOverHeadWidget();
-
+	SetHUDHealth();
+	SetHealth(MaxHealth);
 }
 
 void AMainCharacter::Tick(float DeltaTime)
@@ -724,9 +725,7 @@ void AMainCharacter::PlayMontage(UAnimMontage* MontageToPlay, const FName Sectio
 void AMainCharacter::Server_SetHealth_Implementation(float HealthValue)
 {
 	float PrevHealthValue = Health;
-
 	Health = HealthValue;
-	OnRep_SetHealth(PrevHealthValue);
 
 	UpdateOverHeadWidget();
 }
@@ -766,7 +765,7 @@ void AMainCharacter::HandleIsRespawned()
 			return;
 		}
 	}
-
+	//SetHealth(MaxHealth);
 	ShooterPlayerController->RefreshHUD();
 }
 
