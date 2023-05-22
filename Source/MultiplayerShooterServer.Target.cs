@@ -7,10 +7,15 @@ public class MultiplayerShooterServerTarget : TargetRules
 {
 	public MultiplayerShooterServerTarget(TargetInfo Target) : base(Target)
 	{
-		Type = TargetType.Game;
+		Type = TargetType.Server;
 		DefaultBuildSettings = BuildSettingsVersion.V2;
+		IncludeOrderVersion = EngineIncludeOrderVersion.Latest;
 
-		ExtraModuleNames.Add("MultiplayerShooter");
-		bUsesSteam = true;
+		ExtraModuleNames.AddRange(new string[] { "MultiplayerShooter" });
+		MultiplayerShooterTarget.ApplySharedMultiplayerShooterTargetSettings(this);
+
+		//bUsesSteam = true;
+
+		bUseChecksInShipping = true;
 	}
 }

@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "Interfaces/OnlineSessionInterface.h"
+#include "FindSessionsCallbackProxy.h"
 #include "Menu.generated.h"
 
 /**
@@ -18,23 +19,37 @@ class MULTIPLAYERSESSIONS_API UMenu : public UUserWidget
 public:
 	UFUNCTION(BlueprintCallable)
 	void SetupMenu(int32 NumberOfPublicConnections = 4, FString TypeOfMatch = TEXT("FreeForAll"),
-		int32 MaxNumberOfSearchResults = 10000000, FString PathOfLobby = FString(TEXT("/Game/ThirdPerson/Maps/Lobby")));
+		int32 MaxNumberOfSearchResults = 10000000, FString PathOfLobby = FString(TEXT("/Game/Maps/Lobby")));
 
 	virtual bool Initialize() override;
 
-private:
+protected:
 	// Widget
-	UPROPERTY(meta = (BindWidget))
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (BindWidget))
 	class UButton* HostButton;
-	
-	UPROPERTY(meta = (BindWidget))
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (BindWidget))
 	class UButton* JoinButton;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = ServerMenu)
+	int32 MaxSearchResults {10000};
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = ServerMenu)
+	TArray<FBlueprintSessionResult> SearchSessionResults;
+
+	UFUNCTION(BlueprintImplementableEvent, Category = SessionMenu)
+	void WriteSessionsName();
+
+	UFUNCTION(BlueprintPure, Category = SessionMenu)
+	FString GetSessionName();
+
+private:
 
 	// Member Variables
 	int32 NumPublicConnections{4};
 	FString MatchType{TEXT("FreeForAll")};
-	int32 MaxSearchResults{10000};
-	FString LobbyPath{"/Game/ThirdPerson/Maps/Lobby"};
+	FString LobbyPath{"/Game/Maps/Lobby"};
+	FString SessionName{ "" };
 
 	// Callback function for the dynamic delegate, needs a specifier
 	UFUNCTION()

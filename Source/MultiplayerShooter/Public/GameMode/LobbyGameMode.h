@@ -17,11 +17,16 @@ class MULTIPLAYERSHOOTER_API ALobbyGameMode : public AGameMode
 public:
 	virtual void PostLogin(APlayerController* NewPlayer) override;
 
+	virtual void PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage);
+
+	virtual APlayerController* Login(UPlayer* NewPlayer, ENetRole InRemoteRole, const FString& Portal, const FString& Options, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage);
+
 
 	UFUNCTION()
-	void GetAllMapNames();
+	bool GetAllMapNames();
 
 protected:
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		TArray<FString> MapNames;
 };

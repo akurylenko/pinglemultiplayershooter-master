@@ -32,10 +32,6 @@
 		{
 			"Name": "CommonUI",
 			"Enabled": true
-		},
-		{
-			"Name": "OnlineSubsystemNull",
-			"Enabled": false
 		}
 	]
 }

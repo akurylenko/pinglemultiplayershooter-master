@@ -4,6 +4,7 @@
 #include "Weapon/ProjectileRocket.h"
 #include "Weapon/ShooterMovementComponent.h"
 #include "NiagaraComponent.h"
+#include "NiagaraSystemInstanceController.h"
 #include "Kismet/GameplayStatics.h"
 
 AProjectileRocket::AProjectileRocket()

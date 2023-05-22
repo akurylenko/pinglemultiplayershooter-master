@@ -132,7 +132,7 @@ void AShooterGameMode::ChangeMap()
 		CurrentLevelName.RemoveFromStart(GetWorld()->StreamingLevelsPrefix);
 
 		int i = 0;
-		while (MapNames.Num() > 1 && (MapName == CurrentLevelName || MapName.Contains("_NoForPlay")) && i < MapNames.Num())
+		while (MapNames.Num() > 1 && (MapName == CurrentLevelName || MapName.Contains("_NoForPlay") || MapName.Contains("Lobby")) && i < MapNames.Num())
 		{
 			MapName = MapNames[FMath::RandRange(0, MapNames.Num() - 1)];
 			++i;

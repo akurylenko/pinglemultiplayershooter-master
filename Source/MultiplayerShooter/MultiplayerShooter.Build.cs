@@ -8,10 +8,12 @@ public class MultiplayerShooter : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "Niagara" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "Niagara", "MultiplayerSessions", "OnlineSubsystemUtils", "OnlineSubsystem", "OnlineSubsystemNull", "OnlineSubsystemSteam" });
 
-		PrivateDependencyModuleNames.AddRange(new string[] { "OnlineSubsystem", "OnlineSubsystemNull", "OnlineSubsystemSteam" });
+		PrivateDependencyModuleNames.AddRange(new string[] { "UMG", "SlateCore" });
 
+
+		//PublicIncludePaths.AddRange(new string[] { "MultiplayerSessions/Public", "MultiplayerSessions/Classes" });
 		// Uncomment if you are using Slate UI
 		// PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
 

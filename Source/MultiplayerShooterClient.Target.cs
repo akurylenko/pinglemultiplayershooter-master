@@ -3,19 +3,16 @@
 using UnrealBuildTool;
 using System.Collections.Generic;
 
-public class MultiplayerShooterEditorTarget : TargetRules
+public class MultiplayerShooterClientTarget : TargetRules
 {
-	public MultiplayerShooterEditorTarget(TargetInfo Target) : base(Target)
+	public MultiplayerShooterClientTarget(TargetInfo Target) : base(Target)
 	{
-		Type = TargetType.Editor;
+		Type = TargetType.Client;
 		DefaultBuildSettings = BuildSettingsVersion.V2;
 		IncludeOrderVersion = EngineIncludeOrderVersion.Latest;
 
-		ExtraModuleNames.AddRange( new string[] { "MultiplayerShooter" } );
+		ExtraModuleNames.AddRange(new string[] { "MultiplayerShooter" });
 		MultiplayerShooterTarget.ApplySharedMultiplayerShooterTargetSettings(this);
-
-
-
-		EnablePlugins.Add("RemoteSession");
+		//bUsesSteam = true;
 	}
 }

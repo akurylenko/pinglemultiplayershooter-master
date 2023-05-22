@@ -6,6 +6,7 @@
 #include "OnlineSessionSettings.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "Interfaces/OnlineSessionInterface.h"
+#include "FindSessionsCallbackProxy.h"
 #include "MultiplayerSessionsSubsystem.generated.h"
 
 //
@@ -33,11 +34,23 @@ public:
 	//
 	// To handle session functionality. The Menu class will call this.
 	//
-	void CreateSession(int32 NumPublicConnections, FString MatchType);
+	void CreateSession(int32 NumPublicConnections, FString MatchType, bool bIsDedicated);
+	
+	UFUNCTION(BlueprintCallable, Category = "MultiplayerSessionsSubsystem")
 	void FindSessions(int32 MaxSearchResults);
-	void JoinSession(const FOnlineSessionSearchResult& SessionResult);
+
+	UFUNCTION(BlueprintCallable, Category = "MultiplayerSessionsSubsystem")
+	void JoinSession(FBlueprintSessionResult SessionResult);
 	void DestroySession();
 	void StartSession();
+
+	UFUNCTION(BlueprintCallable, Category = "MultiplayerSessionsSubsystem")
+	void FindDedicatedSessions(int32 MaxSearchResults);
+
+
+	bool GetIsSessionCreated() { return bSessionCreated; }
+
+	TSharedPtr<FOnlineSessionSettings> GetLastSessionSettings() { return LastSessionSettings; }
 
 	//
 	// Our own custom delegates for the Menu class to bind callbacks to
@@ -88,4 +101,5 @@ private:
 	bool bCreateSessionOnDestroy{false};
 	int32 LastNumPublicConnections{0};
 	FString LastMatchType{""};
+	bool bSessionCreated{ false };
 };

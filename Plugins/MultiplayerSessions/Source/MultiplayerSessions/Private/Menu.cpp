@@ -5,6 +5,8 @@
 #include "MultiplayerSessionsSubsystem.h"
 #include "OnlineSubsystem.h"
 #include "Components/Button.h"
+#include "Components/TextBlock.h"
+#include "Components/VerticalBox.h"
 
 void UMenu::SetupMenu(int32 NumberOfPublicConnections, FString TypeOfMatch, int32 MaxNumberOfSearchResults, FString PathOfLobby)
 {
@@ -14,7 +16,14 @@ void UMenu::SetupMenu(int32 NumberOfPublicConnections, FString TypeOfMatch, int3
 	NumPublicConnections = NumberOfPublicConnections;
 	MatchType = TypeOfMatch;
 	MaxSearchResults = MaxNumberOfSearchResults;
-	LobbyPath = FString::Printf(TEXT("%s?listen"), *PathOfLobby);
+	if (PathOfLobby.IsEmpty())
+	{
+		LobbyPath = LobbyPath + "%s?listen";
+	}
+	else
+	{
+		LobbyPath = FString::Printf(TEXT("%s?listen"), *PathOfLobby);
+	}
 
 	UWorld* World = GetWorld();
 	if (World)
@@ -38,7 +47,14 @@ void UMenu::SetupMenu(int32 NumberOfPublicConnections, FString TypeOfMatch, int3
 	// Bind the callbacks to the custom delegates once the menu is set up
 	if (MultiplayerSessionsSubsystem)
 	{
-		MultiplayerSessionsSubsystem->MultiplayerOnCreateSessionComplete.AddDynamic(this, &ThisClass::OnCreateSession);
+		if (MultiplayerSessionsSubsystem->GetIsSessionCreated())
+		{
+			OnCreateSession(true);
+		}
+		else
+		{
+			MultiplayerSessionsSubsystem->MultiplayerOnCreateSessionComplete.AddDynamic(this, &ThisClass::OnCreateSession);
+		}
 		MultiplayerSessionsSubsystem->MultiplayerOnFindSessionsComplete.AddUObject(this, &ThisClass::OnFindSessions);
 		MultiplayerSessionsSubsystem->MultiplayerOnJoinSessionComplete.AddUObject(this, &ThisClass::OnJoinSession);
 		MultiplayerSessionsSubsystem->MultiplayerOnStartSessionComplete.AddDynamic(this, &ThisClass::OnStartSession);
@@ -64,12 +80,18 @@ bool UMenu::Initialize()
 	return true;
 }
 
+FString UMenu::GetSessionName()
+{
+	return SessionName;
+}
+
 void UMenu::HostButtonClicked()
 {
-	if (MultiplayerSessionsSubsystem)
+	if (MultiplayerSessionsSubsystem && !MultiplayerSessionsSubsystem->GetLastSessionSettings()->bIsDedicated)
 	{
 		HostButton->SetIsEnabled(false);
-		MultiplayerSessionsSubsystem->CreateSession(NumPublicConnections, MatchType);
+		MultiplayerSessionsSubsystem->CreateSession(NumPublicConnections, MatchType, false);
+		//WriteSessionsName();
 	}
 }
 
@@ -78,7 +100,8 @@ void UMenu::JoinButtonClicked()
 	if (MultiplayerSessionsSubsystem)
 	{
 		JoinButton->SetIsEnabled(false);
-		MultiplayerSessionsSubsystem->FindSessions(MaxSearchResults);
+		//MultiplayerSessionsSubsystem->FindSessions(MaxSearchResults);
+		//WriteSessionsName();
 	}
 }
 
@@ -108,9 +131,34 @@ void UMenu::OnCreateSession(bool bWasSuccessful)
 				-1,
 				15.f,
 				FColor::Blue,
-				FString(TEXT("Created Successfully"))
+				FString::Printf(TEXT("Connected Info, %s"), *LobbyPath)
 			);
 		}
+
+		IOnlineSubsystem* Subsystem = IOnlineSubsystem::Get();
+		if (Subsystem)
+		{
+			IOnlineSessionPtr OnlineSessionInterface = Subsystem->GetSessionInterface();
+
+			// Join the session
+			if (OnlineSessionInterface.IsValid())
+			{
+				FString Address;
+				if (OnlineSessionInterface->GetResolvedConnectString(NAME_GameSession, Address))
+				{
+					GEngine->AddOnScreenDebugMessage(
+						-1,
+						15.f,
+						FColor::Yellow,
+						FString::Printf(TEXT("Connected Info, %s"), *Address)
+					);
+					FName NameSession = NAME_GameSession;
+					SessionName = NameSession.ToString();
+					HostButton->SetIsEnabled(false);
+				}
+			}
+		}
+
 		// Server Travel to the Lobby Level
 		UWorld* World = GetWorld();
 		if (World)
@@ -135,6 +183,7 @@ void UMenu::OnCreateSession(bool bWasSuccessful)
 
 void UMenu::OnFindSessions(const TArray<FOnlineSessionSearchResult>& SessionResults, bool bWasSuccessful)
 {
+	SearchSessionResults.Empty();
 	if (MultiplayerSessionsSubsystem == nullptr)
 	{
 		return;
@@ -166,7 +215,7 @@ void UMenu::OnFindSessions(const TArray<FOnlineSessionSearchResult>& SessionResu
 			);
 
 			// Check and print the MatchType result
-			if (SettingsValue == MatchType)
+			if (SettingsValue.Equals(MatchType, ESearchCase::CaseSensitive))
 			{
 				GEngine->AddOnScreenDebugMessage(
 					-1,
@@ -174,17 +223,27 @@ void UMenu::OnFindSessions(const TArray<FOnlineSessionSearchResult>& SessionResu
 					FColor::Cyan,
 					FString::Printf(TEXT("Joining Match Type is: %s"), *SettingsValue)
 				);
-				MultiplayerSessionsSubsystem->JoinSession(Result);
-				return;
+
+				FBlueprintSessionResult SessionResult;
+				SessionResult.OnlineResult = Result;
+				SearchSessionResults.Add(SessionResult);
+				if (SessionResult.OnlineResult.Session.SessionSettings.bIsDedicated)
+				{
+					MultiplayerSessionsSubsystem->JoinSession(SessionResult);
+					return;
+				}
+			//	MultiplayerSessionsSubsystem->JoinSession(Result);
+			//	return;
 			}
 		}
 	}
+	WriteSessionsName();
 }
 
 void UMenu::OnJoinSession(EOnJoinSessionCompleteResult::Type Result)
 {
 	// Print the connected info and Client Travel to the new level
-	if (Result == EOnJoinSessionCompleteResult::Success)
+	if (Result == EOnJoinSessionCompleteResult::Success || Result == EOnJoinSessionCompleteResult::AlreadyInSession)
 	{
 		IOnlineSubsystem* Subsystem = IOnlineSubsystem::Get();
 		if (Subsystem)
@@ -203,13 +262,14 @@ void UMenu::OnJoinSession(EOnJoinSessionCompleteResult::Type Result)
 							-1,
 							15.f,
 							FColor::Yellow,
-							FString::Printf(TEXT("Connected Info, %s"), *Address)
+							FString::Printf(TEXT("UMenu::OnJoinSession,  Connected Info, Address:  %s"), *Address)
 						);
 					}
 					APlayerController* PlayerController = GetGameInstance()->GetFirstLocalPlayerController();
 					if (PlayerController)
 					{
 						PlayerController->ClientTravel(Address, ETravelType::TRAVEL_Absolute);
+						JoinButton->SetIsEnabled(false);
 					}
 				}
 			}
@@ -224,7 +284,7 @@ void UMenu::OnJoinSession(EOnJoinSessionCompleteResult::Type Result)
 				-1,
 				15.f,
 				FColor::Red,
-				FString::Printf(TEXT("Faild to join session, %i"), Result)
+				FString::Printf(TEXT("OnJoinSession()   Faild to join session, EOnJoinSessionCompleteResult::Type Result = %i"), Result)
 			);
 		}
 		JoinButton->SetIsEnabled(true);
@@ -233,12 +293,22 @@ void UMenu::OnJoinSession(EOnJoinSessionCompleteResult::Type Result)
 
 void UMenu::OnStartSession(bool bWasSuccessful)
 {
-	
+	GEngine->AddOnScreenDebugMessage(
+		-1,
+		15.f,
+		bWasSuccessful ? FColor::Green : FColor::Red,
+		FString::Printf(TEXT( "UMenu::OnStartSession: % f"), bWasSuccessful ? *FString("true") : *FString("false"))
+	);
 }
 
 void UMenu::OnDestroySession(bool bWasSuccessful)
 {
-
+	GEngine->AddOnScreenDebugMessage(
+		-1,
+		15.f,
+		bWasSuccessful ? FColor::Green : FColor::Red,
+		FString::Printf(TEXT("UMenu::OnDestroySession: %f"), bWasSuccessful ? *FString("true") : *FString("false"))
+	);
 }
 
 void UMenu::OnLevelRemovedFromWorld(ULevel* InLevel, UWorld* InWorld)
